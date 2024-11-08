@@ -1,0 +1,195 @@
+// memo/app/page.tsx
+'use client';
+import Image from 'next/image';
+import { useState, useEffect } from 'react';
+import ReactConfetti from 'react-confetti';
+import { MemoList } from '@/components/ui/MemoList';
+import { Input } from "@/components/ui/Input";
+import type { Memo } from '@/types';
+import { ErrorDisplay } from '@/components/ui/ErrorDisplay';
+import { MemoError, ErrorCode } from '@/types/errors';
+
+interface ApiResponse {
+    message?: string;
+    data?: Memo;
+}
+
+export default function PageAccueil() {
+    const [content, setContent] = useState('');
+    const [currentMemo, setCurrentMemo] = useState<Memo | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [streamingContent, setStreamingContent] = useState<string>('');
+    const [showConfetti, setShowConfetti] = useState(false);
+    const [windowSize, setWindowSize] = useState({
+        width: typeof window !== 'undefined' ? window.innerWidth : 0,
+        height: typeof window !== 'undefined' ? window.innerHeight : 0
+    });
+
+    useEffect(() => {
+        const handleResize = () => {
+            setWindowSize({
+                width: window.innerWidth,
+                height: window.innerHeight
+            });
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    const handleSubmit = async (e?: React.FormEvent) => {
+        e?.preventDefault();
+        if (!content.trim() || isLoading) return;
+
+        setIsLoading(true);
+        setError(null);
+        setStreamingContent('');
+
+        // Créer un nouveau mémo vide
+        const newMemo: Memo = {
+            sections: [],
+            metadata: {
+                createdAt: new Date().toISOString(),
+                topic: content
+            }
+        };
+        setCurrentMemo(newMemo);
+
+        try {
+            const response = await fetch('/api/memos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: content.trim() })
+            });
+
+            if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
+
+            const reader = response.body?.getReader();
+            if (!reader) throw new Error('Response body is null');
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const text = new TextDecoder().decode(value);
+                const lines = text.split('\n\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const data = JSON.parse(line.slice(6));
+
+                        if (data.type === 'update') {
+                            setStreamingContent(JSON.stringify(data.section));
+                        } else if (data.type === 'complete') {
+                            setStreamingContent('');
+                            setCurrentMemo(data.memo);
+                            setShowConfetti(true);
+                            setTimeout(() => setShowConfetti(false), 5000);
+                        }
+                    }
+                }
+            }
+
+            setContent('');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+            setCurrentMemo(null);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="flex flex-col h-screen bg-[#121212] text-white overflow-hidden">
+            {showConfetti && (
+                <ReactConfetti
+                    width={windowSize.width}
+                    height={windowSize.height}
+                    numberOfPieces={500}
+                    recycle={false}
+                    gravity={0.8}
+                    initialVelocityX={{
+                        min: -30,
+                        max: 30
+                    }}
+                    initialVelocityY={{
+                        min: -80,
+                        max: -20
+                    }}
+                    colors={[
+                        '#FF0000', // Rouge vif
+                        '#00FF00', // Vert vif
+                        '#0000FF', // Bleu vif
+                        '#FFFF00', // Jaune vif
+                        '#FF00FF', // Magenta
+                        '#00FFFF', // Cyan
+                        '#FF8C00', // Orange vif
+                        '#FF1493', // Rose vif
+                        '#7FFF00', // Vert chartreuse
+                        '#FF69B4', // Rose chaud
+                    ]}
+                    onConfettiComplete={() => setShowConfetti(false)}
+                    tweenDuration={50}
+                    friction={0.97}
+                    confettiSource={{
+                        x: windowSize.width / 2,
+                        y: windowSize.height * 0.6,
+                        w: 0,
+                        h: 0
+                    }}
+                    drawShape={ctx => {
+                        ctx.beginPath();
+                        for(let i = 0; i < 6; i++) {
+                            ctx.lineTo(
+                                10 * Math.cos(2 * Math.PI * i / 6),
+                                10 * Math.sin(2 * Math.PI * i / 6)
+                            );
+                        }
+                        ctx.fill();
+                    }}
+                />
+            )}
+            <header className="pt-[var(--header-padding-top)]">
+                <Image
+                    src="/memo.svg"
+                    alt="Logo Memo"
+                    width={200}
+                    height={100}
+                    priority
+                    draggable={false}
+                    className="select-none mx-auto"
+                />
+            </header>
+
+            <main className="flex-1 flex flex-col items-center gap-[var(--content-spacing)] px-4">
+                {error && (
+                    <div className="w-full max-w-xl">
+                        <ErrorDisplay
+                            error={new MemoError(ErrorCode.API_ERROR, error)}
+                            onRetry={handleSubmit}
+                        />
+                    </div>
+                )}
+
+                <div className="flex-1 flex items-center justify-center w-full max-w-[640px] mt-[var(--memo-margin-top)]">
+                    <MemoList
+                        memos={currentMemo ? [currentMemo] : []}
+                        isLoading={isLoading}
+                        currentStreamingContent={streamingContent}
+                    />
+                </div>
+
+                <div className="mb-[var(--input-margin-bottom)]">
+                    <Input
+                        value={content}
+                        onChange={(e) => setContent(e.target.value)}
+                        onSubmit={handleSubmit}
+                        isLoading={isLoading}
+                        placeholder="Sur quel sujet souhaitez-vous apprendre ?"
+                    />
+                </div>
+            </main>
+        </div>
+    );
+}

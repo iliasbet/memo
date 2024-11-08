@@ -1,0 +1,85 @@
+/* @tailwind base; */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 7%;
+    --foreground: 0 0% 100%;
+    --primary: 142 91% 25%;
+    --secondary: 0 85% 29%;
+
+    /* Espacements */
+    --header-padding-top: 1.5rem;
+    /* 8px */
+    --content-spacing: 0.5rem;
+    /* 8px */
+    --memo-margin-top: 0.1rem;
+    /* 16px */
+    --input-margin-bottom: 3rem;
+    /* 16px */
+  }
+}
+
+body {
+  @apply bg-background text-foreground;
+}
+
+@keyframes borderAnimation {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 200% 0%;
+  }
+}
+
+@keyframes loadingBorder {
+  0% {
+    background-position: 0% 0;
+  }
+  100% {
+    background-position: 300% 0;
+  }
+}
+
+.loading-border {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 300% 100%;
+  animation: loadingBorder 2s linear infinite;
+}
+
+@keyframes loading {
+    from {
+        transform: translateX(-100%);
+    }
+    to {
+        transform: translateX(100%);
+    }
+}
+
+@keyframes shine {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; }
+    20% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+.loading-text {
+    animation: fadeInOut 2s ease-in-out infinite;
+}
