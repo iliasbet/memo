@@ -9,11 +9,6 @@ import type { Memo } from '@/types';
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay';
 import { MemoError, ErrorCode } from '@/types/errors';
 
-interface ApiResponse {
-    message?: string;
-    data?: Memo;
-}
-
 export default function PageAccueil() {
     const [content, setContent] = useState('');
     const [currentMemo, setCurrentMemo] = useState<Memo | null>(null);
@@ -140,7 +135,7 @@ export default function PageAccueil() {
                     }}
                     drawShape={ctx => {
                         ctx.beginPath();
-                        for(let i = 0; i < 6; i++) {
+                        for (let i = 0; i < 6; i++) {
                             ctx.lineTo(
                                 10 * Math.cos(2 * Math.PI * i / 6),
                                 10 * Math.sin(2 * Math.PI * i / 6)

@@ -4,29 +4,43 @@ export enum LogLevel {
   ERROR = 'ERROR'
 }
 
+interface LogMessage {
+  level: LogLevel;
+  message: string;
+  data?: unknown;
+  timestamp: string;
+}
+
 export class Logger {
-  static log(
-    level: LogLevel,
-    message: string,
-    context?: Record<string, unknown>
-  ): void {
-    const timestamp = new Date().toISOString();
-    const logEntry = {
-      timestamp,
+  private static logs: LogMessage[] = [];
+  private static maxLogs = 100;
+
+  static log(level: LogLevel, message: string, data?: unknown) {
+    const logMessage: LogMessage = {
       level,
       message,
-      context
+      data,
+      timestamp: new Date().toISOString()
     };
 
-    switch (level) {
-      case LogLevel.ERROR:
-        console.error(JSON.stringify(logEntry, null, 2));
-        break;
-      case LogLevel.WARN:
-        console.warn(JSON.stringify(logEntry, null, 2));
-        break;
-      default:
-        console.log(JSON.stringify(logEntry, null, 2));
+    this.logs.push(logMessage);
+
+    // Garder seulement les derniers logs
+    if (this.logs.length > this.maxLogs) {
+      this.logs = this.logs.slice(-this.maxLogs);
     }
+
+    // En développement, on affiche aussi dans la console
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[${level}] ${message}`, data);
+    }
+  }
+
+  static getLogs(): LogMessage[] {
+    return [...this.logs];
+  }
+
+  static clearLogs(): void {
+    this.logs = [];
   }
 }

@@ -1,7 +1,7 @@
 // memo/components/ui/MemoList.tsx
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { MemoSection } from './MemoSection';
 import type { Memo } from '@/types';
 
@@ -26,7 +26,7 @@ export const MemoList: React.FC<MemoListProps> = ({
         setCurrentIndex(0);
     }, [memos.length]);
 
-    const loadingTexts = [
+    const loadingTexts = useMemo(() => [
         "Je réfléchis à votre demande...",
         "Mon cerveau artificiel fait des pompes...",
         "Je consulte ma boule de cristal numérique...",
@@ -37,7 +37,7 @@ export const MemoList: React.FC<MemoListProps> = ({
         "Je charge ma créativité.exe...",
         "Je m'inspire en regardant des memes...",
         "Je bois un café virtuel pour me booster..."
-    ];
+    ], []);
 
     useEffect(() => {
         if (!isLoading) return;
