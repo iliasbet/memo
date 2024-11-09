@@ -21,7 +21,7 @@ export const objectifPrompt = createPrompt(
     Contraintes :
     - Pertinent
     - Mesurable
-    - Commmence par un seul verbe d'action à l'infinitif
+    - Commence par un seul verbe d'action à l'infinitif
 
     Exemples : 
     - "Comprendre le fonctionnement de la mémoire"

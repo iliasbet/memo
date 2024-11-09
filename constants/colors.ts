@@ -1,3 +1,6 @@
+// Définition des couleurs pour chaque type de section de mémo
+// Utilisé pour la cohérence visuelle à travers l'application
+
 export const MEMO_COLORS = {
     objectif: '#067934',
     accroche: '#8b0909',
@@ -12,7 +15,7 @@ export const MEMO_COLORS = {
 
 export type MemoColorKey = keyof typeof MEMO_COLORS;
 
-// Ajout des variantes de thème qui étaient dans theme.ts
+// Types et variantes de thème pour l'application
 export const MEMO_VARIANTS = {
     default: {
         background: '#1E1E1E',

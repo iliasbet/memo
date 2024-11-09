@@ -1,6 +1,6 @@
 export const LoadingCard = () => {
     return (
-        <div className="relative w-full h-full">
+        <div className="relative w-full h-full" role="status" aria-live="polite">
             <div className="absolute inset-0 rounded-2xl bg-[#1A1A1A] overflow-hidden">
                 {/* Effet de pulse pour le type */}
                 <div className="absolute top-8 left-1/2 -translate-x-1/2 w-20 h-4 bg-gray-700 rounded animate-pulse" />

@@ -1,23 +1,25 @@
-// Types de base pour les sections
-export type SectionType =
-    | 'objectif'
-    | 'accroche'
-    | 'idee'
-    | 'argument'
-    | 'exemple'
-    | 'transition'
-    | 'resume'
-    | 'acquis'
-    | 'ouverture';
+// Définition des types principaux pour l'application Memo
+// Énumération des différentes sections possibles d'un mémo
+export enum SectionType {
+    Objectif = 'objectif',
+    Accroche = 'accroche',
+    Idee = 'idee',
+    Argument = 'argument',
+    Exemple = 'exemple',
+    Transition = 'transition',
+    Resume = 'resume',
+    Acquis = 'acquis',
+    Ouverture = 'ouverture',
+}
 
-// Interface pour une section de mémo
+// Structure d'une section de mémo
 export interface MemoSection {
     type: SectionType;
     contenu: string;
     couleur: string;
 }
 
-// Interface pour un mémo complet
+// Structure complète d'un mémo
 export interface Memo {
     id?: number;
     sections: MemoSection[];
@@ -29,7 +31,7 @@ export interface Memo {
 
 // Props pour le composant MemoSection
 export interface MemoSectionProps {
-    type: string;
+    type: SectionType;
     content: string;
     color: string;
     isActive: boolean;
@@ -37,11 +39,13 @@ export interface MemoSectionProps {
     direction?: 'left' | 'right';
 }
 
+// Structure pour grouper les idées
 export interface IdeaGroup {
     mainIdea: string;
     followUpIdeas: string[];
 }
 
+// Contexte global pour la génération de mémo
 export interface MemoContext {
     topic: string;
     objective: string;

@@ -18,6 +18,10 @@ import { ErrorHandler } from '@/lib/errorHandling';
 import { MemoContext } from '@/types';
 import { AI_MODELS, MODEL_CONFIG, DEFAULT_MODEL } from '@/constants/ai';
 
+// Service de génération de mémos utilisant OpenAI et Anthropic
+// Gère la création de sections de mémo de manière séquentielle
+
+// Initialisation des clients IA
 if (!process.env.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY is not defined');
 }
@@ -39,6 +43,7 @@ const anthropic = process.env.ANTHROPIC_API_KEY
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 seconde
 
+// Fonction utilitaire pour réessayer les appels API en cas d'échec
 const withRetry = async <T>(fn: () => Promise<T>): Promise<T> => {
     let lastError: Error;
 
@@ -75,12 +80,9 @@ const generateCompletion = async (
 
     switch (config.provider) {
         case 'openai':
-            if (!process.env.OPENAI_API_KEY) {
-                throw new Error('OPENAI_API_KEY is not defined');
-            }
             const openAICompletion = await openai.chat.completions.create({
                 model: AI_MODELS[modelType],
-                messages: messages as OpenAIMessage[],
+                messages: messages,
                 temperature: config.temperature,
                 max_tokens: config.max_tokens,
                 stream: false
@@ -109,6 +111,7 @@ const generateCompletion = async (
     }
 };
 
+// Génère une section spécifique du mémo
 export const generateSection = async (
     content: string,
     prompt: (context: MemoContext) => string,
@@ -124,7 +127,7 @@ export const generateSection = async (
         ];
 
         const completion = await ErrorHandler.withRetry(
-            async () => generateCompletion(messages),
+            () => generateCompletion(messages),
             {
                 context: { type, content }
             }
@@ -176,6 +179,7 @@ export const animateSection = async (
     });
 };
 
+// Génère un mémo complet avec toutes ses sections
 export const generateMemo = async (
     content: string,
     onProgress?: (section: MemoSection) => void
@@ -191,40 +195,40 @@ export const generateMemo = async (
 
     try {
         // 1. Objectif (toujours en premier)
-        const objectifSection = await generateSection(content, objectifPrompt, 'objectif', context);
+        const objectifSection = await generateSection(content, objectifPrompt, SectionType.Objectif, context);
         sections.push(objectifSection);
-        if (onProgress) onProgress(objectifSection);
+        onProgress?.(objectifSection);
         context.objective = objectifSection.contenu;
 
         // 2. Accroche
-        const accrocheSection = await generateSection(content, accrochePrompt, 'accroche', context);
+        const accrocheSection = await generateSection(content, accrochePrompt, SectionType.Accroche, context);
         sections.push(accrocheSection);
-        if (onProgress) onProgress(accrocheSection);
+        onProgress?.(accrocheSection);
 
         // 3. Parties principales (3 itérations)
         for (let partIndex = 0; partIndex < 3; partIndex++) {
             context.currentPartIndex = partIndex;
 
             // Idée principale
-            const ideeSection = await generateSection(content, ideePrompt, 'idee', context);
+            const ideeSection = await generateSection(content, ideePrompt, SectionType.Idee, context);
             sections.push(ideeSection);
-            if (onProgress) onProgress(ideeSection);
+            onProgress?.(ideeSection);
 
             // Argument
-            const argumentSection = await generateSection(content, argumentPrompt, 'argument', context);
+            const argumentSection = await generateSection(content, argumentPrompt, SectionType.Argument, context);
             sections.push(argumentSection);
-            if (onProgress) onProgress(argumentSection);
+            onProgress?.(argumentSection);
 
             // Exemple
-            const exempleSection = await generateSection(content, exemplePrompt, 'exemple', context);
+            const exempleSection = await generateSection(content, exemplePrompt, SectionType.Exemple, context);
             sections.push(exempleSection);
-            if (onProgress) onProgress(exempleSection);
+            onProgress?.(exempleSection);
 
             // Transition (sauf pour la dernière partie)
             if (partIndex < 2) {
-                const transitionSection = await generateSection(content, transitionPrompt, 'transition', context);
+                const transitionSection = await generateSection(content, transitionPrompt, SectionType.Transition, context);
                 sections.push(transitionSection);
-                if (onProgress) onProgress(transitionSection);
+                onProgress?.(transitionSection);
             }
 
             // Mise à jour du contexte
@@ -235,17 +239,17 @@ export const generateMemo = async (
         }
 
         // 4. Sections finales
-        const resumeSection = await generateSection(content, resumePrompt, 'resume', context);
+        const resumeSection = await generateSection(content, resumePrompt, SectionType.Resume, context);
         sections.push(resumeSection);
-        if (onProgress) onProgress(resumeSection);
+        onProgress?.(resumeSection);
 
-        const acquisSection = await generateSection(content, acquisPrompt, 'acquis', context);
+        const acquisSection = await generateSection(content, acquisPrompt, SectionType.Acquis, context);
         sections.push(acquisSection);
-        if (onProgress) onProgress(acquisSection);
+        onProgress?.(acquisSection);
 
-        const ouvertureSection = await generateSection(content, ouverturePrompt, 'ouverture', context);
+        const ouvertureSection = await generateSection(content, ouverturePrompt, SectionType.Ouverture, context);
         sections.push(ouvertureSection);
-        if (onProgress) onProgress(ouvertureSection);
+        onProgress?.(ouvertureSection);
 
         return {
             sections,

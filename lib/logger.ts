@@ -32,7 +32,19 @@ export class Logger {
 
     // En développement, on affiche aussi dans la console
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[${level}] ${message}`, data);
+      switch (level) {
+        case LogLevel.INFO:
+          console.info(`[${level}] ${message}`, data);
+          break;
+        case LogLevel.WARN:
+          console.warn(`[${level}] ${message}`, data);
+          break;
+        case LogLevel.ERROR:
+          console.error(`[${level}] ${message}`, data);
+          break;
+        default:
+          console.log(`[${level}] ${message}`, data);
+      }
     }
   }
 

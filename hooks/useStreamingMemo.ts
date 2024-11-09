@@ -1,34 +1,26 @@
-import { useState, useEffect } from 'react';
-import { Memo } from '@/types';
+import { useState, useCallback } from 'react';
+import { MemoSection, Memo } from '@/types';
 
-// Nouveau hook personnalisé
 export const useStreamingMemo = () => {
     const [memo, setMemo] = useState<Memo | null>(null);
     const [streamingContent, setStreamingContent] = useState<string>('');
 
-    const updateMemo = (section: any) => {
-        setMemo(prev => {
-            if (!prev) {
-                return {
-                    sections: [section],
-                    metadata: {
-                        createdAt: new Date().toISOString(),
-                        topic: section.topic || ''
-                    }
-                };
-            }
+    const updateMemo = useCallback((section: MemoSection) => {
+        setMemo(prev => prev
+            ? { ...prev, sections: [...prev.sections, section] }
+            : {
+                sections: [section],
+                metadata: {
+                    createdAt: new Date().toISOString(),
+                    topic: section.contenu || ''
+                }
+            });
+    }, []);
 
-            return {
-                ...prev,
-                sections: [...prev.sections, section]
-            };
-        });
-    };
-
-    const resetMemo = () => {
+    const resetMemo = useCallback(() => {
         setMemo(null);
         setStreamingContent('');
-    };
+    }, []);
 
     return {
         memo,

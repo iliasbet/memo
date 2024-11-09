@@ -13,47 +13,47 @@ export class ErrorHandler {
         maxRetries: 3,
         baseDelay: 1000,
         context: {},
-        onRetry: () => { }
+        onRetry: () => { },
     };
 
     static async withRetry<T>(
         operation: () => Promise<T>,
         options: RetryOptions = {}
     ): Promise<T> {
-        const opts = { ...this.DEFAULT_OPTIONS, ...options };
+        const { maxRetries, baseDelay, context, onRetry } = {
+            ...this.DEFAULT_OPTIONS,
+            ...options,
+        };
         let lastError: Error | null = null;
 
-        for (let attempt = 0; attempt < opts.maxRetries; attempt++) {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
                 return await operation();
             } catch (error) {
                 lastError = error as Error;
-
-                // Log l'erreur avec le contexte approprié
-                Logger.log(LogLevel.WARN, `Retry ${attempt + 1}/${opts.maxRetries}`, {
+                Logger.log(LogLevel.WARN, `Retry ${attempt}/${maxRetries}`, {
                     error: lastError,
-                    context: opts.context
+                    context,
                 });
 
-                if (attempt < opts.maxRetries - 1) {
-                    const delay = opts.baseDelay * Math.pow(2, attempt);
-                    opts.onRetry(attempt + 1, lastError);
-                    await new Promise(resolve => setTimeout(resolve, delay));
+                if (attempt < maxRetries) {
+                    const delay = baseDelay * 2 ** (attempt - 1);
+                    onRetry(attempt, lastError);
+                    await new Promise((resolve) => setTimeout(resolve, delay));
                 }
             }
         }
 
-        // Transformation de l'erreur finale
-        const finalError = this.transformError(lastError!, opts.context);
+        const finalError = this.transformError(lastError!, context);
         Logger.log(LogLevel.ERROR, 'Final error after retries', {
             error: finalError,
-            context: opts.context
+            context,
         });
 
         throw finalError;
     }
 
-    public static handle(error: Error, context: Record<string, unknown> = {}): MemoError {
+    static handle(error: Error, context: Record<string, unknown> = {}): MemoError {
         return this.transformError(error, context);
     }
 
@@ -62,21 +62,22 @@ export class ErrorHandler {
             return error;
         }
 
-        // Catégorisation des erreurs
-        if (error.name === 'OpenAIError') {
-            return new MemoError(ErrorCode.OPENAI_ERROR, error.message, context);
-        }
+        const errorMapping: Record<string, ErrorCode> = {
+            OpenAIError: ErrorCode.OPENAI_ERROR,
+            ValidationError: ErrorCode.VALIDATION_ERROR,
+            TypeError: ErrorCode.VALIDATION_ERROR,
+            network: ErrorCode.NETWORK_ERROR,
+            timeout: ErrorCode.NETWORK_ERROR,
+        };
 
-        if (error.name === 'TypeError' || error.name === 'ValidationError') {
-            return new MemoError(ErrorCode.VALIDATION_ERROR, error.message, context);
-        }
-
-        if (error.message.includes('network') || error.message.includes('timeout')) {
-            return new MemoError(ErrorCode.NETWORK_ERROR, error.message, context);
+        for (const [key, code] of Object.entries(errorMapping)) {
+            if (error.name === key || error.message.includes(key)) {
+                return new MemoError(code, error.message, context);
+            }
         }
 
         return new MemoError(ErrorCode.API_ERROR, error.message, context);
     }
 }
 
-export { MemoError } from '@/types/errors'; 
+export { MemoError } from '@/types/errors';

@@ -1,13 +1,15 @@
-// memo/app/page.tsx
 'use client';
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import ReactConfetti from 'react-confetti';
 import { MemoList } from '@/components/ui/MemoList';
 import { Input } from "@/components/ui/Input";
 import type { Memo } from '@/types';
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay';
 import { MemoError, ErrorCode } from '@/types/errors';
+
+// Page d'accueil de l'application Memo
+// Gère l'interface principale et la saisie du sujet du mémo
 
 export default function PageAccueil() {
     const [content, setContent] = useState('');
@@ -20,19 +22,19 @@ export default function PageAccueil() {
         height: typeof window !== 'undefined' ? window.innerHeight : 0
     });
 
-    useEffect(() => {
-        const handleResize = () => {
-            setWindowSize({
-                width: window.innerWidth,
-                height: window.innerHeight
-            });
-        };
-
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+    const handleResize = useCallback(() => {
+        setWindowSize({
+            width: window.innerWidth,
+            height: window.innerHeight
+        });
     }, []);
 
-    const handleSubmit = async (e?: React.FormEvent) => {
+    useEffect(() => {
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [handleResize]);
+
+    const handleSubmit = useCallback(async (e?: React.FormEvent) => {
         e?.preventDefault();
         if (!content.trim() || isLoading) return;
 
@@ -63,19 +65,7 @@ export default function PageAccueil() {
 
             // Simuler le streaming côté client
             for (const section of memo.sections) {
-                setCurrentMemo((prev) => {
-                    if (!prev) {
-                        return {
-                            sections: [section],
-                            metadata: memo.metadata
-                        };
-                    }
-                    return {
-                        ...prev,
-                        sections: [...prev.sections, section]
-                    };
-                });
-                // Petit délai pour l'effet visuel
+                setCurrentMemo(prev => prev ? { ...prev, sections: [...prev.sections, section] } : { sections: [section], metadata: memo.metadata });
                 await new Promise(resolve => setTimeout(resolve, 500));
             }
 
@@ -84,15 +74,13 @@ export default function PageAccueil() {
             setContent('');
         } catch (err) {
             console.error('Request error:', err);
-            const errorMessage = err instanceof Error
-                ? err.message
-                : 'Une erreur inattendue est survenue';
+            const errorMessage = err instanceof Error ? err.message : 'Une erreur inattendue est survenue';
             setError(errorMessage);
             setCurrentMemo(null);
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [content, isLoading]);
 
     return (
         <div className="flex flex-col h-screen bg-[#121212] text-white overflow-hidden">
@@ -176,7 +164,7 @@ export default function PageAccueil() {
                     <div className="mt-12 mb-8">
                         <Input
                             value={content}
-                            onChange={(e) => setContent(e.target.value)}
+                            onChange={e => setContent(e.target.value)}
                             onSubmit={handleSubmit}
                             isLoading={isLoading}
                             placeholder="Sur quel sujet souhaitez-vous apprendre ?"

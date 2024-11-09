@@ -1,20 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import { ChevronLeft, ChevronRight, RotateCw } from 'lucide-react';
 import { Memo, MemoSection as MemoSectionType } from '@/types';
 import { MEMO_COLORS } from '@/constants/colors';
 import { MemoSection } from './MemoSection';
 
+// Composant d'affichage de la liste des mémos
+// Gère la navigation et l'affichage des sections de mémo
+
+// Props du composant
 interface MemoListProps {
     memos: Memo[];
     isLoading: boolean;
     currentStreamingContent: string | null;
 }
 
-export const MemoList: React.FC<MemoListProps> = ({
-    memos,
-    isLoading,
-    currentStreamingContent
-}) => {
+export const MemoList: React.FC<MemoListProps> = memo(({ memos, isLoading, currentStreamingContent }) => {
+    // État pour suivre la section actuellement affichée
     const [currentIndex, setCurrentIndex] = useState(0);
     const currentMemo = memos[memos.length - 1];
     let currentSection: MemoSectionType | null = null;
@@ -38,21 +39,21 @@ export const MemoList: React.FC<MemoListProps> = ({
     const isFirstSection = currentIndex === 0;
     const isLastSection = currentIndex === totalSections - 1;
 
-    const handlePrevious = () => {
+    const handlePrevious = useCallback(() => {
         if (!isFirstSection) {
             setCurrentIndex(prev => prev - 1);
         }
-    };
+    }, [isFirstSection]);
 
-    const handleNext = () => {
+    const handleNext = useCallback(() => {
         if (!isLastSection) {
             setCurrentIndex(prev => prev + 1);
         }
-    };
+    }, [isLastSection]);
 
-    const handleRestart = () => {
+    const handleRestart = useCallback(() => {
         setCurrentIndex(0);
-    };
+    }, []);
 
     const isCurrentSectionLoading = (section: MemoSectionType | null) => {
         if (!currentStreamingContent || !section) return false;
@@ -85,6 +86,7 @@ export const MemoList: React.FC<MemoListProps> = ({
                                 onClick={handlePrevious}
                                 disabled={isFirstSection}
                                 title={isFirstSection ? "Début du mémo" : "Section précédente"}
+                                aria-label={isFirstSection ? "Début du mémo" : "Section précédente"}
                             >
                                 <ChevronLeft className={`w-6 h-6 ${isFirstSection ? 'text-white/50' : 'text-white'}`} />
                             </button>
@@ -107,6 +109,7 @@ export const MemoList: React.FC<MemoListProps> = ({
                                     rounded-full flex items-center justify-center transition-colors"
                                 onClick={isLastSection ? handleRestart : handleNext}
                                 title={isLastSection ? "Recommencer le mémo" : "Section suivante"}
+                                aria-label={isLastSection ? "Recommencer le mémo" : "Section suivante"}
                             >
                                 {isLastSection ? (
                                     <RotateCw className="w-6 h-6 text-white" />
@@ -120,4 +123,4 @@ export const MemoList: React.FC<MemoListProps> = ({
             </div>
         </div>
     );
-};
+});
