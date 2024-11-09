@@ -63,7 +63,6 @@ export default function PageAccueil() {
 
             // Simuler le streaming côté client
             for (const section of memo.sections) {
-                // Déclencher une mise à jour partielle
                 setCurrentMemo((prev) => {
                     if (!prev) {
                         return {

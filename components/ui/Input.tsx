@@ -30,39 +30,44 @@ export const Input = memo(function Input({
       onSubmit={handleSubmit}
       className="relative w-full flex justify-center items-center"
     >
+      <label htmlFor="memo-input" className="sr-only">
+        {placeholder}
+      </label>
       <input
+        id="memo-input"
+        name="memo-input"
         type="text"
         value={value}
         onChange={onChange}
         placeholder={placeholder}
         disabled={isLoading}
         className="
-                    w-[420px]
-                    px-5 py-3
-                    pr-14
-                    bg-[#1E1E1E]
-                    rounded-full
-                    text-white placeholder-gray-400
-                    focus:outline-none
-                    disabled:opacity-50
-                    font-lexend
-                "
+          w-[420px]
+          px-5 py-3
+          pr-14
+          bg-[#1E1E1E]
+          rounded-full
+          text-white placeholder-gray-400
+          focus:outline-none
+          disabled:opacity-50
+          font-lexend
+        "
       />
       <button
         type="submit"
         disabled={isLoading}
         className="
-                    absolute right-2
-                    w-9 h-9
-                    rounded-full
-                    bg-[#2A2A2A]
-                    hover:bg-[#3A3A3A]
-                    disabled:opacity-50
-                    transition-colors
-                    flex items-center justify-center
-                    text-gray-300
-                    hover:text-white
-                "
+          absolute right-2
+          w-9 h-9
+          rounded-full
+          bg-[#2A2A2A]
+          hover:bg-[#3A3A3A]
+          disabled:opacity-50
+          transition-colors
+          flex items-center justify-center
+          text-gray-300
+          hover:text-white
+        "
       >
         {isLoading ? (
           <div className="w-4 h-4 animate-spin rounded-full border-2 border-gray-300 border-t-white" />
