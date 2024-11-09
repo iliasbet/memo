@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 import { MemoSection, SectionType, Memo } from '@/types';
 import { MEMO_COLORS } from '@/constants/colors';
 import {
@@ -15,8 +16,25 @@ import {
 } from '@/lib/prompts';
 import { ErrorHandler } from '@/lib/errorHandling';
 import { MemoContext } from '@/types';
+import { AI_MODELS, MODEL_CONFIG, DEFAULT_MODEL } from '@/constants/ai';
 
-const openai = new OpenAI();
+if (!process.env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY is not defined');
+}
+
+if (!process.env.ANTHROPIC_API_KEY) {
+    throw new Error('ANTHROPIC_API_KEY is not defined');
+}
+
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+});
+
+const anthropic = process.env.ANTHROPIC_API_KEY
+    ? new Anthropic({
+        apiKey: process.env.ANTHROPIC_API_KEY
+    })
+    : null;
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 seconde
@@ -38,6 +56,59 @@ const withRetry = async <T>(fn: () => Promise<T>): Promise<T> => {
     throw lastError!;
 };
 
+// Définir les types pour les messages
+type OpenAIMessage = {
+    role: 'system' | 'user' | 'assistant';
+    content: string;
+}
+
+type AnthropicMessage = {
+    role: 'user' | 'assistant';
+    content: string;
+}
+
+const generateCompletion = async (
+    messages: OpenAIMessage[],
+    modelType = DEFAULT_MODEL
+) => {
+    const config = MODEL_CONFIG[modelType];
+
+    switch (config.provider) {
+        case 'openai':
+            if (!process.env.OPENAI_API_KEY) {
+                throw new Error('OPENAI_API_KEY is not defined');
+            }
+            const openAICompletion = await openai.chat.completions.create({
+                model: AI_MODELS[modelType],
+                messages: messages as OpenAIMessage[],
+                temperature: config.temperature,
+                max_tokens: config.max_tokens,
+                stream: false
+            });
+            return openAICompletion.choices[0].message.content || '';
+
+        case 'anthropic':
+            if (!anthropic) {
+                throw new Error('ANTHROPIC_API_KEY is not defined');
+            }
+            const anthropicMessages = messages.map(m => ({
+                role: m.role === 'system' ? 'assistant' : m.role,
+                content: m.content
+            })) as AnthropicMessage[];
+
+            const anthropicCompletion = await anthropic.messages.create({
+                model: AI_MODELS[modelType],
+                messages: anthropicMessages,
+                temperature: config.temperature,
+                max_tokens: config.max_tokens
+            });
+            return anthropicCompletion.content[0].text;
+
+        default:
+            throw new Error(`Provider non supporté: ${config.provider}`);
+    }
+};
+
 export const generateSection = async (
     content: string,
     prompt: (context: MemoContext) => string,
@@ -47,27 +118,28 @@ export const generateSection = async (
     const color = MEMO_COLORS[type] || '#000000';
 
     try {
-        const completion = await withRetry(() => openai.chat.completions.create({
-            model: "gpt-4-turbo-preview",
-            messages: [
-                { role: "system", content: prompt(context) },
-                { role: "user", content }
-            ],
-            temperature: 0.7,
-            max_tokens: 100,
-            stream: false
-        }));
+        const messages: OpenAIMessage[] = [
+            { role: 'system', content: prompt(context) },
+            { role: 'user', content }
+        ];
 
-        const generatedContent = completion.choices[0].message.content || '';
+        const completion = await ErrorHandler.withRetry(
+            async () => generateCompletion(messages),
+            {
+                context: { type, content }
+            }
+        );
 
         return {
             type,
-            contenu: generatedContent,
+            contenu: completion,
             couleur: color
         };
     } catch (error) {
-        ErrorHandler.handle(error, { type, content });
-        throw error;
+        throw await ErrorHandler.withRetry(
+            () => Promise.reject(error),
+            { context: { type, content } }
+        );
     }
 };
 
@@ -118,54 +190,62 @@ export const generateMemo = async (
     };
 
     try {
-        // Générer et envoyer chaque section immédiatement
+        // 1. Objectif (toujours en premier)
         const objectifSection = await generateSection(content, objectifPrompt, 'objectif', context);
-        if (onProgress) onProgress(objectifSection);
         sections.push(objectifSection);
+        if (onProgress) onProgress(objectifSection);
         context.objective = objectifSection.contenu;
 
+        // 2. Accroche
         const accrocheSection = await generateSection(content, accrochePrompt, 'accroche', context);
-        if (onProgress) onProgress(accrocheSection);
         sections.push(accrocheSection);
+        if (onProgress) onProgress(accrocheSection);
 
+        // 3. Parties principales (3 itérations)
         for (let partIndex = 0; partIndex < 3; partIndex++) {
             context.currentPartIndex = partIndex;
 
-            const mainIdea = await generateSection(content, ideePrompt, 'idee', context);
-            if (onProgress) onProgress(mainIdea);
-            sections.push(mainIdea);
+            // Idée principale
+            const ideeSection = await generateSection(content, ideePrompt, 'idee', context);
+            sections.push(ideeSection);
+            if (onProgress) onProgress(ideeSection);
 
-            const argument = await generateSection(content, argumentPrompt, 'argument', context);
-            if (onProgress) onProgress(argument);
-            sections.push(argument);
+            // Argument
+            const argumentSection = await generateSection(content, argumentPrompt, 'argument', context);
+            sections.push(argumentSection);
+            if (onProgress) onProgress(argumentSection);
 
-            const exemple = await generateSection(content, exemplePrompt, 'exemple', context);
-            if (onProgress) onProgress(exemple);
-            sections.push(exemple);
+            // Exemple
+            const exempleSection = await generateSection(content, exemplePrompt, 'exemple', context);
+            sections.push(exempleSection);
+            if (onProgress) onProgress(exempleSection);
 
+            // Transition (sauf pour la dernière partie)
             if (partIndex < 2) {
-                const transition = await generateSection(content, transitionPrompt, 'transition', context);
-                if (onProgress) onProgress(transition);
-                sections.push(transition);
+                const transitionSection = await generateSection(content, transitionPrompt, 'transition', context);
+                sections.push(transitionSection);
+                if (onProgress) onProgress(transitionSection);
             }
 
+            // Mise à jour du contexte
             context.ideaGroups.push({
-                mainIdea: mainIdea.contenu,
+                mainIdea: ideeSection.contenu,
                 followUpIdeas: []
             });
         }
 
-        const resume = await generateSection(content, resumePrompt, 'resume', context);
-        if (onProgress) onProgress(resume);
-        sections.push(resume);
+        // 4. Sections finales
+        const resumeSection = await generateSection(content, resumePrompt, 'resume', context);
+        sections.push(resumeSection);
+        if (onProgress) onProgress(resumeSection);
 
-        const acquis = await generateSection(content, acquisPrompt, 'acquis', context);
-        if (onProgress) onProgress(acquis);
-        sections.push(acquis);
+        const acquisSection = await generateSection(content, acquisPrompt, 'acquis', context);
+        sections.push(acquisSection);
+        if (onProgress) onProgress(acquisSection);
 
-        const ouverture = await generateSection(content, ouverturePrompt, 'ouverture', context);
-        if (onProgress) onProgress(ouverture);
-        sections.push(ouverture);
+        const ouvertureSection = await generateSection(content, ouverturePrompt, 'ouverture', context);
+        sections.push(ouvertureSection);
+        if (onProgress) onProgress(ouvertureSection);
 
         return {
             sections,
@@ -175,7 +255,10 @@ export const generateMemo = async (
             }
         };
     } catch (error) {
-        console.error('Erreur dans generateMemo:', error);
-        throw error;
+        // Correction de l'erreur TypeScript
+        ErrorHandler.withRetry(() => Promise.reject(error), {
+            context: { content }
+        });
+        throw error; // Pour s'assurer que l'erreur est propagée
     }
 }; 

@@ -31,3 +31,10 @@ export class ValidationError extends MemoError {
     this.name = 'ValidationError';
   }
 }
+
+export class AnthropicError extends MemoError {
+  constructor(message: string, context?: Record<string, unknown>) {
+    super(ErrorCode.API_ERROR, message, context);
+    this.name = 'AnthropicError';
+  }
+}

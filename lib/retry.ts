@@ -2,28 +2,42 @@ import { MemoError, ErrorCode } from '@/types/errors';
 import { Logger } from './logger';
 import { LogLevel } from './logger';
 
-const MAX_RETRIES = 3;
-const BASE_DELAY = 1000;
+interface RetryOptions {
+    maxRetries?: number;
+    baseDelay?: number;
+    shouldRetry?: (error: Error) => boolean;
+}
 
-export async function withRetry<T>(operation: () => Promise<T>): Promise<T> {
+export const withRetry = async <T>(
+    operation: () => Promise<T>,
+    options: RetryOptions = {}
+): Promise<T> => {
+    const {
+        maxRetries = 3,
+        baseDelay = 1000,
+        shouldRetry = () => true
+    } = options;
+
     let lastError: Error | null = null;
 
-    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
             return await operation();
         } catch (error) {
             lastError = error as Error;
-            Logger.log(LogLevel.WARN, `Tentative ${attempt + 1}/${MAX_RETRIES} échouée`, { error });
-            
-            if (attempt < MAX_RETRIES - 1) {
-                await new Promise(resolve => setTimeout(resolve, BASE_DELAY * (attempt + 1)));
+
+            if (!shouldRetry(lastError) || attempt === maxRetries - 1) {
+                break;
             }
+
+            Logger.log(LogLevel.WARN, `Retry ${attempt + 1}/${maxRetries}`, { error });
+            await new Promise(r => setTimeout(r, baseDelay * (attempt + 1)));
         }
     }
 
     throw new MemoError(
         ErrorCode.API_ERROR,
-        `Échec après ${MAX_RETRIES} tentatives`,
+        `Operation failed after ${maxRetries} attempts`,
         { originalError: lastError }
     );
-}
+};

@@ -1,21 +1,17 @@
 import React, { memo } from 'react';
-
-interface MemoSectionProps {
-    type: string;
-    content: string;
-    color: string;
-    isActive: boolean;
-    direction?: 'left' | 'right';
-}
+import { MemoSectionProps } from '@/types';
+import { LoadingCard } from './LoadingCard';
 
 export const MemoSection = memo(function MemoSection({
     type,
     content,
     color,
     isActive,
+    isLoading = false,
     direction = 'right'
 }: MemoSectionProps) {
     if (!isActive) return null;
+    if (isLoading) return <LoadingCard />;
 
     return (
         <div className="relative w-full h-full">

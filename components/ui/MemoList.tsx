@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, RotateCw } from 'lucide-react';
-import { MemoSection } from './MemoSection';
+import { Memo, MemoSection as MemoSectionType } from '@/types';
 import { MEMO_COLORS } from '@/constants/colors';
+import { MemoSection } from './MemoSection';
 
 interface MemoListProps {
-    memos: any[];
+    memos: Memo[];
     isLoading: boolean;
-    currentStreamingContent?: string | null;
+    currentStreamingContent: string | null;
 }
 
 export const MemoList: React.FC<MemoListProps> = ({
@@ -16,7 +17,7 @@ export const MemoList: React.FC<MemoListProps> = ({
 }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const currentMemo = memos[memos.length - 1];
-    let currentSection = null;
+    let currentSection: MemoSectionType | null = null;
 
     if (currentStreamingContent) {
         try {
@@ -53,6 +54,16 @@ export const MemoList: React.FC<MemoListProps> = ({
         setCurrentIndex(0);
     };
 
+    const isCurrentSectionLoading = (section: MemoSectionType | null) => {
+        if (!currentStreamingContent || !section) return false;
+        try {
+            const data = JSON.parse(currentStreamingContent);
+            return data.type === 'update' && data.section.type === section.type;
+        } catch {
+            return false;
+        }
+    };
+
     return (
         <div className="relative w-full max-w-2xl mx-auto">
             <div className="relative w-full aspect-[16/9]">
@@ -85,6 +96,7 @@ export const MemoList: React.FC<MemoListProps> = ({
                                 content={currentSection.contenu}
                                 color={MEMO_COLORS[currentSection.type as keyof typeof MEMO_COLORS]}
                                 isActive={true}
+                                isLoading={isCurrentSectionLoading(currentSection)}
                             />
                         )}
 

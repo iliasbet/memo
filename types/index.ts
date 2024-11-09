@@ -27,8 +27,15 @@ export interface Memo {
     };
 }
 
-// Type pour la réponse de l'API de génération de section
-export type SectionResponse = MemoSection | MemoSection[];
+// Props pour le composant MemoSection
+export interface MemoSectionProps {
+    type: string;
+    content: string;
+    color: string;
+    isActive: boolean;
+    isLoading?: boolean;
+    direction?: 'left' | 'right';
+}
 
 export interface IdeaGroup {
     mainIdea: string;
