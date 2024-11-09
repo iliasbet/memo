@@ -2,57 +2,66 @@ import { generateMemo } from '@/lib/memoGeneration';
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
-    const encoder = new TextEncoder();
-    const { content } = await request.json();
-
-    if (!content || typeof content !== 'string') {
-        return NextResponse.json(
-            { message: 'Le contenu est requis et doit être une chaîne de caractères' },
-            { status: 400 }
-        );
-    }
-
     try {
+        console.log('API Route - Start');
+        const encoder = new TextEncoder();
+        const { content } = await request.json();
+        console.log('Content received:', content);
+
+        if (!process.env.OPENAI_API_KEY || !process.env.ANTHROPIC_API_KEY) {
+            console.error('Missing API keys');
+            throw new Error('Configuration du serveur incomplète');
+        }
+
         const stream = new TransformStream();
         const writer = stream.writable.getWriter();
 
-        generateMemo(content, async (section) => {
+        // Gestion de la promesse de génération
+        const memoPromise = generateMemo(content, async (section) => {
             try {
                 const sectionData = JSON.stringify({ type: 'update', section });
                 await writer.write(encoder.encode(`data: ${sectionData}\n\n`));
             } catch (error) {
                 console.error('Erreur écriture section:', error);
-            }
-        }).then(async (memo) => {
-            try {
-                await writer.write(encoder.encode(`data: ${JSON.stringify({ type: 'complete', memo })}\n\n`));
-            } catch (error) {
-                console.error('Erreur completion:', error);
-            } finally {
-                await writer.close();
-            }
-        }).catch(async (error) => {
-            console.error('Erreur génération:', error);
-            try {
-                await writer.write(encoder.encode(`data: ${JSON.stringify({ type: 'error', message: error.message })}\n\n`));
-            } catch (e) {
-                console.error('Erreur envoi erreur:', e);
-            } finally {
-                await writer.close();
+                throw error; // Propager l'erreur
             }
         });
+
+        // Gestion asynchrone avec Promise.race pour éviter les blocages
+        const timeout = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Timeout')),
+                process.env.NODE_ENV === 'production' ? 15000 : 30000
+            )
+        );
+
+        Promise.race([memoPromise, timeout])
+            .then(async (memo) => {
+                const completeData = JSON.stringify({ type: 'complete', memo });
+                await writer.write(encoder.encode(`data: ${completeData}\n\n`));
+                await writer.close();
+            })
+            .catch(async (error) => {
+                console.error('Erreur génération:', error);
+                const errorData = JSON.stringify({
+                    type: 'error',
+                    message: error.message || 'Erreur inconnue'
+                });
+                await writer.write(encoder.encode(`data: ${errorData}\n\n`));
+                await writer.close();
+            });
 
         return new Response(stream.readable, {
             headers: {
                 'Content-Type': 'text/event-stream',
-                'Cache-Control': 'no-cache',
-                'Connection': 'keep-alive'
+                'Cache-Control': 'no-cache, no-transform',
+                'Connection': 'keep-alive',
+                'X-Accel-Buffering': 'no'
             },
         });
     } catch (error) {
         console.error('Erreur API:', error);
         return NextResponse.json(
-            { message: 'Échec de la génération du mémo' },
+            { message: error instanceof Error ? error.message : 'Échec de la génération du mémo' },
             { status: 500 }
         );
     }

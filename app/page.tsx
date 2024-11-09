@@ -40,55 +40,67 @@ export default function PageAccueil() {
         setIsLoading(true);
         setError(null);
         setStreamingContent('');
-
-        // Créer un nouveau mémo vide
-        const newMemo: Memo = {
-            sections: [],
-            metadata: {
-                createdAt: new Date().toISOString(),
-                topic: content
-            }
-        };
-        setCurrentMemo(newMemo);
+        setCurrentMemo(null);
 
         try {
+            console.log('Sending request...');
             const response = await fetch('/api/memos', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ content: content.trim() })
             });
 
-            if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
+            console.log('Response status:', response.status);
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Erreur serveur: ${response.status}`);
+            }
 
             const reader = response.body?.getReader();
             if (!reader) throw new Error('Response body is null');
 
+            let streamBuffer = '';
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
 
-                const text = new TextDecoder().decode(value);
-                const lines = text.split('\n\n');
+                streamBuffer += new TextDecoder().decode(value);
+                const lines = streamBuffer.split('\n\n');
+
+                // Garder le dernier fragment incomplet pour le prochain cycle
+                streamBuffer = lines.pop() || '';
 
                 for (const line of lines) {
                     if (line.startsWith('data: ')) {
-                        const data = JSON.parse(line.slice(6));
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            console.log('Received data:', data);
 
-                        if (data.type === 'update') {
-                            setStreamingContent(JSON.stringify(data));
-                        } else if (data.type === 'complete') {
-                            setStreamingContent('');
-                            setCurrentMemo(data.memo);
-                            setShowConfetti(true);
-                            setTimeout(() => setShowConfetti(false), 5000);
+                            if (data.type === 'error') {
+                                throw new Error(data.message);
+                            } else if (data.type === 'update') {
+                                setStreamingContent(JSON.stringify(data));
+                            } else if (data.type === 'complete') {
+                                setStreamingContent('');
+                                setCurrentMemo(data.memo);
+                                setShowConfetti(true);
+                                setTimeout(() => setShowConfetti(false), 5000);
+                                setContent('');
+                            }
+                        } catch (parseError) {
+                            console.error('Parse error:', parseError);
+                            throw new Error('Erreur de traitement des données');
                         }
                     }
                 }
             }
-
-            setContent('');
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+            console.error('Request error:', err);
+            const errorMessage = err instanceof Error
+                ? err.message
+                : 'Une erreur inattendue est survenue';
+            setError(errorMessage);
             setCurrentMemo(null);
         } finally {
             setIsLoading(false);
@@ -162,7 +174,12 @@ export default function PageAccueil() {
                     {error && (
                         <div className="w-full max-w-xl mb-6">
                             <ErrorDisplay
-                                error={new MemoError(ErrorCode.API_ERROR, error)}
+                                error={new MemoError(
+                                    error.includes('connexion')
+                                        ? ErrorCode.NETWORK_ERROR
+                                        : ErrorCode.API_ERROR,
+                                    error
+                                )}
                                 onRetry={handleSubmit}
                             />
                         </div>

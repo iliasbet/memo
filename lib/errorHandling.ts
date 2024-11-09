@@ -53,6 +53,10 @@ export class ErrorHandler {
         throw finalError;
     }
 
+    public static handle(error: Error, context: Record<string, unknown> = {}): MemoError {
+        return this.transformError(error, context);
+    }
+
     private static transformError(error: Error, context: Record<string, unknown>): MemoError {
         if (error instanceof MemoError) {
             return error;
@@ -73,4 +77,6 @@ export class ErrorHandler {
 
         return new MemoError(ErrorCode.API_ERROR, error.message, context);
     }
-} 
+}
+
+export { MemoError } from '@/types/errors'; 

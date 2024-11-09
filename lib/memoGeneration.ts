@@ -255,10 +255,7 @@ export const generateMemo = async (
             }
         };
     } catch (error) {
-        // Correction de l'erreur TypeScript
-        ErrorHandler.withRetry(() => Promise.reject(error), {
-            context: { content }
-        });
-        throw error; // Pour s'assurer que l'erreur est propagée
+        console.error('Erreur de génération:', error);
+        throw ErrorHandler.handle(error as Error, { content });
     }
 }; 
