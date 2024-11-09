@@ -1,11 +1,10 @@
 import { generateMemo } from '@/lib/memoGeneration';
 import { NextResponse } from 'next/server';
-import { Memo } from '@/types';
 
 export async function POST(request: Request) {
     const encoder = new TextEncoder();
     const { content } = await request.json();
-    
+
     if (!content || typeof content !== 'string') {
         return NextResponse.json(
             { message: 'Le contenu est requis et doit être une chaîne de caractères' },

@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { MemoSection, SectionType } from '@/types';
+import { MemoSection, SectionType, Memo } from '@/types';
 import { MEMO_COLORS } from '@/constants/colors';
 import {
     objectifPrompt,
