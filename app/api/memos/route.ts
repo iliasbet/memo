@@ -3,66 +3,66 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
     try {
-        console.log('API Route - Start');
         const encoder = new TextEncoder();
         const { content } = await request.json();
-        console.log('Content received:', content);
 
         if (!process.env.OPENAI_API_KEY || !process.env.ANTHROPIC_API_KEY) {
-            console.error('Missing API keys');
             throw new Error('Configuration du serveur incomplète');
         }
 
-        const stream = new TransformStream();
+        // Créer un stream avec une taille de chunk plus grande
+        const stream = new TransformStream({}, {
+            highWaterMark: 1024 * 1024, // 1MB buffer
+            size() { return 1; }
+        });
         const writer = stream.writable.getWriter();
 
-        // Gestion de la promesse de génération
-        const memoPromise = generateMemo(content, async (section) => {
+        // Fonction pour écrire dans le stream de manière fiable
+        const writeToStream = async (data: any) => {
             try {
-                const sectionData = JSON.stringify({ type: 'update', section });
-                await writer.write(encoder.encode(`data: ${sectionData}\n\n`));
+                await writer.write(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
             } catch (error) {
-                console.error('Erreur écriture section:', error);
-                throw error; // Propager l'erreur
+                console.error('Erreur écriture stream:', error);
             }
-        });
+        };
 
-        // Gestion asynchrone avec Promise.race pour éviter les blocages
-        const timeout = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Timeout')),
-                process.env.NODE_ENV === 'production' ? 15000 : 30000
-            )
-        );
-
-        Promise.race([memoPromise, timeout])
-            .then(async (memo) => {
-                const completeData = JSON.stringify({ type: 'complete', memo });
-                await writer.write(encoder.encode(`data: ${completeData}\n\n`));
-                await writer.close();
-            })
-            .catch(async (error) => {
-                console.error('Erreur génération:', error);
-                const errorData = JSON.stringify({
-                    type: 'error',
-                    message: error.message || 'Erreur inconnue'
+        // Lancer la génération en arrière-plan
+        (async () => {
+            try {
+                const memo = await generateMemo(content, async (section) => {
+                    await writeToStream({ type: 'update', section });
                 });
-                await writer.write(encoder.encode(`data: ${errorData}\n\n`));
+                await writeToStream({ type: 'complete', memo });
+            } catch (error) {
+                await writeToStream({
+                    type: 'error',
+                    message: error instanceof Error ? error.message : 'Erreur inconnue'
+                });
+            } finally {
                 await writer.close();
-            });
+            }
+        })();
 
+        // Retourner immédiatement la réponse avec les bons headers
         return new Response(stream.readable, {
             headers: {
                 'Content-Type': 'text/event-stream',
                 'Cache-Control': 'no-cache, no-transform',
                 'Connection': 'keep-alive',
-                'X-Accel-Buffering': 'no'
+                'X-Accel-Buffering': 'no',
+                'Transfer-Encoding': 'chunked'
             },
         });
     } catch (error) {
         console.error('Erreur API:', error);
-        return NextResponse.json(
-            { message: error instanceof Error ? error.message : 'Échec de la génération du mémo' },
-            { status: 500 }
+        return new Response(
+            JSON.stringify({
+                message: error instanceof Error ? error.message : 'Erreur inconnue'
+            }),
+            {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            }
         );
     }
 }

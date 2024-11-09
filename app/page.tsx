@@ -42,15 +42,16 @@ export default function PageAccueil() {
         setStreamingContent('');
         setCurrentMemo(null);
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+
         try {
-            console.log('Sending request...');
             const response = await fetch('/api/memos', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content: content.trim() })
+                body: JSON.stringify({ content: content.trim() }),
+                signal: controller.signal
             });
-
-            console.log('Response status:', response.status);
 
             if (!response.ok) {
                 const errorData = await response.json();
