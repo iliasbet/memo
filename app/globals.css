@@ -11,14 +11,10 @@
     --secondary: 0 85% 29%;
 
     /* Espacements */
-    --header-padding-top: 1.5rem;
-    /* 8px */
-    --content-spacing: 0.5rem;
-    /* 8px */
-    --memo-margin-top: 0.1rem;
-    /* 16px */
-    --input-margin-bottom: 3rem;
-    /* 16px */
+    --header-padding-top: 1.3rem;
+    --content-spacing: 0.25rem;
+    --memo-margin-top: 0rem;
+    --input-margin-bottom: 2rem;
   }
 }
 

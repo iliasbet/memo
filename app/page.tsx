@@ -145,46 +145,48 @@ export default function PageAccueil() {
                     }}
                 />
             )}
-            <header className="pt-[var(--header-padding-top)]">
-                <Image
-                    src="/memo.svg"
-                    alt="Logo Memo"
-                    width={200}
-                    height={100}
-                    priority
-                    draggable={false}
-                    className="select-none mx-auto"
-                />
-            </header>
+            <div className="min-h-screen flex flex-col">
+                <header className="pt-4">
+                    <Image
+                        src="/memo.svg"
+                        alt="Logo Memo"
+                        width={200}
+                        height={100}
+                        priority
+                        draggable={false}
+                        className="select-none mx-auto"
+                    />
+                </header>
 
-            <main className="flex-1 flex flex-col items-center gap-[var(--content-spacing)] px-4">
-                {error && (
-                    <div className="w-full max-w-xl">
-                        <ErrorDisplay
-                            error={new MemoError(ErrorCode.API_ERROR, error)}
-                            onRetry={handleSubmit}
+                <main className="flex flex-col items-center px-4 mt-6">
+                    {error && (
+                        <div className="w-full max-w-xl mb-6">
+                            <ErrorDisplay
+                                error={new MemoError(ErrorCode.API_ERROR, error)}
+                                onRetry={handleSubmit}
+                            />
+                        </div>
+                    )}
+
+                    <div className="w-full max-w-[640px]">
+                        <MemoList
+                            memos={currentMemo ? [currentMemo] : []}
+                            isLoading={isLoading}
+                            currentStreamingContent={streamingContent}
                         />
                     </div>
-                )}
 
-                <div className="flex-1 flex items-center justify-center w-full max-w-[640px] mt-[var(--memo-margin-top)]">
-                    <MemoList
-                        memos={currentMemo ? [currentMemo] : []}
-                        isLoading={isLoading}
-                        currentStreamingContent={streamingContent}
-                    />
-                </div>
-
-                <div className="mb-[var(--input-margin-bottom)]">
-                    <Input
-                        value={content}
-                        onChange={(e) => setContent(e.target.value)}
-                        onSubmit={handleSubmit}
-                        isLoading={isLoading}
-                        placeholder="Sur quel sujet souhaitez-vous apprendre ?"
-                    />
-                </div>
-            </main>
+                    <div className="mt-12 mb-8">
+                        <Input
+                            value={content}
+                            onChange={(e) => setContent(e.target.value)}
+                            onSubmit={handleSubmit}
+                            isLoading={isLoading}
+                            placeholder="Sur quel sujet souhaitez-vous apprendre ?"
+                        />
+                    </div>
+                </main>
+            </div>
         </div>
     );
 }
