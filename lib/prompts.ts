@@ -1,4 +1,3 @@
-import { SectionType } from '@/types';
 import { MemoContext } from '@/types/index';
 
 // Prompt système de base
@@ -6,7 +5,7 @@ export const systemBasePrompt = `Tu es un expert en pédagogie spécialisé dans
 Ta mission est de générer du contenu qui soit à la fois rigoureux, engageant et facilement mémorisable.
 Adapte toujours ton niveau de langage pour qu'il soit accessible tout en restant précis.`;
 
-const createPrompt = (instruction: string, contextHandler?: (context: MemoContext) => string) => 
+const createPrompt = (instruction: string, contextHandler?: (context: MemoContext) => string) =>
     (context: MemoContext) => `${systemBasePrompt}
 
 ${instruction}

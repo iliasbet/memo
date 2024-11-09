@@ -68,7 +68,7 @@ export const MemoList: React.FC<MemoListProps> = ({
         }
 
         return () => clearTimeout(timeout);
-    }, [isLoading, displayedText, isDeleting, textIndex]);
+    }, [isLoading, displayedText, isDeleting, textIndex, loadingTexts]);
 
     const streamingSection = currentStreamingContent ? JSON.parse(currentStreamingContent) : null;
 

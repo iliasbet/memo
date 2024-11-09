@@ -1,9 +1,7 @@
 import OpenAI from 'openai';
 import { MemoSection, SectionType } from '@/types';
-import type { Memo } from '@/types';
 import { MEMO_COLORS } from '@/constants/colors';
 import {
-    systemBasePrompt,
     objectifPrompt,
     accrochePrompt,
     ideePrompt,
@@ -15,9 +13,6 @@ import {
     acquisPrompt,
     ouverturePrompt
 } from '@/lib/prompts';
-import { ErrorCode, MemoError, OpenAIError } from '@/types/errors';
-import { Logger } from './logger';
-import { LogLevel } from './logger';
 import { ErrorHandler } from '@/lib/errorHandling';
 import { MemoContext } from '@/types';
 
@@ -83,15 +78,15 @@ export const animateSection = async (
 ): Promise<void> => {
     const startTime = Date.now();
     const content = section.contenu;
-    
+
     return new Promise((resolve) => {
         const animate = () => {
             const elapsedTime = Date.now() - startTime;
             const progress = Math.min(elapsedTime / duration, 1);
             const easeProgress = 1 - Math.pow(1 - progress, 3);
-            
+
             const charsToShow = Math.floor(content.length * easeProgress);
-            
+
             onProgress({
                 ...section,
                 contenu: content.slice(0, charsToShow)
@@ -133,15 +128,15 @@ export const generateMemo = async (
     // Générer les 3 parties principales avec leurs idées
     for (let partIndex = 0; partIndex < 3; partIndex++) {
         context.currentPartIndex = partIndex;
-        
+
         // Générer l'idée principale
         const mainIdea = await generateSection(content, ideePrompt, 'idee', context);
         sections.push(mainIdea);
-        
+
         // Décider aléatoirement si on ajoute des idées de suivi (0-2 idées)
         const followUpCount = Math.floor(Math.random() * 3);
         const followUpIdeas = [];
-        
+
         for (let i = 0; i < followUpCount; i++) {
             const followUp = await generateSection(content, followUpIdeaPrompt, 'idee', context);
             sections.push(followUp);
