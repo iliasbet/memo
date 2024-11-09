@@ -14,7 +14,7 @@ export default function PageAccueil() {
     const [currentMemo, setCurrentMemo] = useState<Memo | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [streamingContent, setStreamingContent] = useState<string>('');
+    const [streamingContent, setStreamingContent] = useState<string | null>('');
     const [showConfetti, setShowConfetti] = useState(false);
     const [windowSize, setWindowSize] = useState({
         width: typeof window !== 'undefined' ? window.innerWidth : 0,
@@ -75,7 +75,7 @@ export default function PageAccueil() {
                         const data = JSON.parse(line.slice(6));
 
                         if (data.type === 'update') {
-                            setStreamingContent(JSON.stringify(data.section));
+                            setStreamingContent(JSON.stringify(data));
                         } else if (data.type === 'complete') {
                             setStreamingContent('');
                             setCurrentMemo(data.memo);

@@ -8,9 +8,9 @@ interface MemoSectionProps {
     direction?: 'left' | 'right';
 }
 
-export const MemoSection = memo(function MemoSection({ 
-    type, 
-    content, 
+export const MemoSection = memo(function MemoSection({
+    type,
+    content,
     color,
     isActive,
     direction = 'right'
@@ -19,7 +19,7 @@ export const MemoSection = memo(function MemoSection({
 
     return (
         <div className="relative w-full h-full">
-            <div 
+            <div
                 className="relative w-full h-full rounded-2xl flex flex-col items-center justify-center px-16 text-center"
                 style={{ backgroundColor: color }}
             >

@@ -117,62 +117,65 @@ export const generateMemo = async (
         currentPartIndex: 0
     };
 
-    // Générer l'objectif et l'accroche
-    const objectifSection = await generateSection(content, objectifPrompt, 'objectif', context);
-    sections.push(objectifSection);
-    context.objective = objectifSection.contenu;
+    try {
+        // Générer et envoyer chaque section immédiatement
+        const objectifSection = await generateSection(content, objectifPrompt, 'objectif', context);
+        if (onProgress) onProgress(objectifSection);
+        sections.push(objectifSection);
+        context.objective = objectifSection.contenu;
 
-    const accrocheSection = await generateSection(content, accrochePrompt, 'accroche', context);
-    sections.push(accrocheSection);
+        const accrocheSection = await generateSection(content, accrochePrompt, 'accroche', context);
+        if (onProgress) onProgress(accrocheSection);
+        sections.push(accrocheSection);
 
-    // Générer les 3 parties principales avec leurs idées
-    for (let partIndex = 0; partIndex < 3; partIndex++) {
-        context.currentPartIndex = partIndex;
+        for (let partIndex = 0; partIndex < 3; partIndex++) {
+            context.currentPartIndex = partIndex;
 
-        // Générer l'idée principale
-        const mainIdea = await generateSection(content, ideePrompt, 'idee', context);
-        sections.push(mainIdea);
+            const mainIdea = await generateSection(content, ideePrompt, 'idee', context);
+            if (onProgress) onProgress(mainIdea);
+            sections.push(mainIdea);
 
-        // Décider aléatoirement si on ajoute des idées de suivi (0-2 idées)
-        const followUpCount = Math.floor(Math.random() * 3);
-        const followUpIdeas = [];
+            const argument = await generateSection(content, argumentPrompt, 'argument', context);
+            if (onProgress) onProgress(argument);
+            sections.push(argument);
 
-        for (let i = 0; i < followUpCount; i++) {
-            const followUp = await generateSection(content, followUpIdeaPrompt, 'idee', context);
-            sections.push(followUp);
-            followUpIdeas.push(followUp.contenu);
+            const exemple = await generateSection(content, exemplePrompt, 'exemple', context);
+            if (onProgress) onProgress(exemple);
+            sections.push(exemple);
+
+            if (partIndex < 2) {
+                const transition = await generateSection(content, transitionPrompt, 'transition', context);
+                if (onProgress) onProgress(transition);
+                sections.push(transition);
+            }
+
+            context.ideaGroups.push({
+                mainIdea: mainIdea.contenu,
+                followUpIdeas: []
+            });
         }
 
-        // Ajouter le groupe d'idées au contexte
-        context.ideaGroups.push({
-            mainIdea: mainIdea.contenu,
-            followUpIdeas: followUpIdeas
-        });
+        const resume = await generateSection(content, resumePrompt, 'resume', context);
+        if (onProgress) onProgress(resume);
+        sections.push(resume);
 
-        // Générer argument et exemple
-        sections.push(await generateSection(content, argumentPrompt, 'argument', context));
-        sections.push(await generateSection(content, exemplePrompt, 'exemple', context));
+        const acquis = await generateSection(content, acquisPrompt, 'acquis', context);
+        if (onProgress) onProgress(acquis);
+        sections.push(acquis);
 
-        // Ajouter une transition si ce n'est pas la dernière partie
-        if (partIndex < 2) {
-            sections.push(await generateSection(content, transitionPrompt, 'transition', context));
-        }
+        const ouverture = await generateSection(content, ouverturePrompt, 'ouverture', context);
+        if (onProgress) onProgress(ouverture);
+        sections.push(ouverture);
 
-        if (onProgress) {
-            sections.forEach(section => onProgress(section));
-        }
+        return {
+            sections,
+            metadata: {
+                createdAt: new Date().toISOString(),
+                topic: content
+            }
+        };
+    } catch (error) {
+        console.error('Erreur dans generateMemo:', error);
+        throw error;
     }
-
-    // Générer la conclusion
-    sections.push(await generateSection(content, resumePrompt, 'resume', context));
-    sections.push(await generateSection(content, acquisPrompt, 'acquis', context));
-    sections.push(await generateSection(content, ouverturePrompt, 'ouverture', context));
-
-    return {
-        sections,
-        metadata: {
-            createdAt: new Date().toISOString(),
-            topic: content
-        }
-    };
 }; 
