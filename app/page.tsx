@@ -14,7 +14,6 @@ export default function PageAccueil() {
     const [currentMemo, setCurrentMemo] = useState<Memo | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [streamingContent, setStreamingContent] = useState<string | null>('');
     const [showConfetti, setShowConfetti] = useState(false);
     const [windowSize, setWindowSize] = useState({
         width: typeof window !== 'undefined' ? window.innerWidth : 0,
@@ -39,7 +38,6 @@ export default function PageAccueil() {
 
         setIsLoading(true);
         setError(null);
-        setStreamingContent('');
         setCurrentMemo(null);
 
         const controller = new AbortController();
@@ -53,49 +51,38 @@ export default function PageAccueil() {
                 signal: controller.signal
             });
 
+            clearTimeout(timeoutId);
+
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || `Erreur serveur: ${response.status}`);
             }
 
-            const reader = response.body?.getReader();
-            if (!reader) throw new Error('Response body is null');
+            const data = await response.json();
+            const { memo } = data;
 
-            let streamBuffer = '';
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                streamBuffer += new TextDecoder().decode(value);
-                const lines = streamBuffer.split('\n\n');
-
-                // Garder le dernier fragment incomplet pour le prochain cycle
-                streamBuffer = lines.pop() || '';
-
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        try {
-                            const data = JSON.parse(line.slice(6));
-                            console.log('Received data:', data);
-
-                            if (data.type === 'error') {
-                                throw new Error(data.message);
-                            } else if (data.type === 'update') {
-                                setStreamingContent(JSON.stringify(data));
-                            } else if (data.type === 'complete') {
-                                setStreamingContent('');
-                                setCurrentMemo(data.memo);
-                                setShowConfetti(true);
-                                setTimeout(() => setShowConfetti(false), 5000);
-                                setContent('');
-                            }
-                        } catch (parseError) {
-                            console.error('Parse error:', parseError);
-                            throw new Error('Erreur de traitement des données');
-                        }
+            // Simuler le streaming côté client
+            for (const section of memo.sections) {
+                // Déclencher une mise à jour partielle
+                setCurrentMemo((prev) => {
+                    if (!prev) {
+                        return {
+                            sections: [section],
+                            metadata: memo.metadata
+                        };
                     }
-                }
+                    return {
+                        ...prev,
+                        sections: [...prev.sections, section]
+                    };
+                });
+                // Petit délai pour l'effet visuel
+                await new Promise(resolve => setTimeout(resolve, 500));
             }
+
+            setShowConfetti(true);
+            setTimeout(() => setShowConfetti(false), 5000);
+            setContent('');
         } catch (err) {
             console.error('Request error:', err);
             const errorMessage = err instanceof Error
@@ -126,16 +113,9 @@ export default function PageAccueil() {
                         max: -20
                     }}
                     colors={[
-                        '#FF0000', // Rouge vif
-                        '#00FF00', // Vert vif
-                        '#0000FF', // Bleu vif
-                        '#FFFF00', // Jaune vif
-                        '#FF00FF', // Magenta
-                        '#00FFFF', // Cyan
-                        '#FF8C00', // Orange vif
-                        '#FF1493', // Rose vif
-                        '#7FFF00', // Vert chartreuse
-                        '#FF69B4', // Rose chaud
+                        '#FF0000', '#00FF00', '#0000FF', '#FFFF00',
+                        '#FF00FF', '#00FFFF', '#FF8C00', '#FF1493',
+                        '#7FFF00', '#FF69B4',
                     ]}
                     onConfettiComplete={() => setShowConfetti(false)}
                     tweenDuration={50}
@@ -190,7 +170,7 @@ export default function PageAccueil() {
                         <MemoList
                             memos={currentMemo ? [currentMemo] : []}
                             isLoading={isLoading}
-                            currentStreamingContent={streamingContent}
+                            currentStreamingContent={null}
                         />
                     </div>
 
