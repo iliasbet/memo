@@ -1,4 +1,4 @@
-// Définition des types principaux pour l'app
+// Définition des types principaux pour l'application Memo
 // Énumération des différentes sections possibles d'un mémo
 export enum SectionType {
     Objectif = 'objectif',
