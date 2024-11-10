@@ -43,7 +43,7 @@ export default function PageAccueil() {
         setCurrentMemo(null);
 
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
 
         try {
             const response = await fetch('/api/memos', {
@@ -56,11 +56,20 @@ export default function PageAccueil() {
             clearTimeout(timeoutId);
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || `Erreur serveur: ${response.status}`);
+                let errorMessage = `Erreur serveur: ${response.status}`;
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.message || errorMessage;
+                } catch {
+                    // Si le parsing JSON échoue, on utilise le message par défaut
+                }
+                throw new Error(errorMessage);
             }
 
-            const data = await response.json();
+            const data = await response.json().catch(() => {
+                throw new Error('Réponse invalide du serveur');
+            });
+
             const { memo } = data;
 
             // Simuler le streaming côté client
