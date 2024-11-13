@@ -6,7 +6,6 @@ import {
     objectifPrompt,
     accrochePrompt,
     ideePrompt,
-    followUpIdeaPrompt,
     argumentPrompt,
     exemplePrompt,
     transitionPrompt,
@@ -184,6 +183,7 @@ export const generateMemo = async (
     content: string,
     onProgress?: (section: MemoSection) => void
 ): Promise<Memo> => {
+    console.log('Starting memo generation for:', content);
     const sections: MemoSection[] = [];
     const context: MemoContext = {
         topic: content,
@@ -194,7 +194,7 @@ export const generateMemo = async (
     };
 
     try {
-        // 1. Objectif (toujours en premier)
+        // 1. Objectif
         const objectifSection = await generateSection(content, objectifPrompt, SectionType.Objectif, context);
         sections.push(objectifSection);
         onProgress?.(objectifSection);
@@ -208,6 +208,11 @@ export const generateMemo = async (
         // 3. Parties principales (3 itérations)
         for (let partIndex = 0; partIndex < 3; partIndex++) {
             context.currentPartIndex = partIndex;
+
+            // Titre de la partie
+            const transitionSection = await generateSection(content, transitionPrompt, SectionType.Transition, context);
+            sections.push(transitionSection);
+            onProgress?.(transitionSection);
 
             // Idée principale
             const ideeSection = await generateSection(content, ideePrompt, SectionType.Idee, context);
@@ -223,13 +228,6 @@ export const generateMemo = async (
             const exempleSection = await generateSection(content, exemplePrompt, SectionType.Exemple, context);
             sections.push(exempleSection);
             onProgress?.(exempleSection);
-
-            // Transition (sauf pour la dernière partie)
-            if (partIndex < 2) {
-                const transitionSection = await generateSection(content, transitionPrompt, SectionType.Transition, context);
-                sections.push(transitionSection);
-                onProgress?.(transitionSection);
-            }
 
             // Mise à jour du contexte
             context.ideaGroups.push({
@@ -259,7 +257,7 @@ export const generateMemo = async (
             }
         };
     } catch (error) {
-        console.error('Erreur de génération:', error);
+        console.error('Error in generateMemo:', error);
         throw ErrorHandler.handle(error as Error, { content });
     }
 }; 

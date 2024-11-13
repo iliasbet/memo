@@ -34,6 +34,24 @@ export default function PageAccueil() {
         return () => window.removeEventListener('resize', handleResize);
     }, [handleResize]);
 
+    const fetchWithRetry = async (url: string, options: RequestInit, retries = 3) => {
+        for (let i = 0; i < retries; i++) {
+            try {
+                const response = await fetch(url, options);
+                if (response.ok) return response;
+
+                // Si c'est la dernière tentative, on laisse l'erreur se propager
+                if (i === retries - 1) return response;
+
+                // Sinon on attend avant de réessayer
+                await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+            } catch (error) {
+                if (i === retries - 1) throw error;
+            }
+        }
+        throw new Error('Toutes les tentatives ont échoué');
+    };
+
     const handleSubmit = useCallback(async (e?: React.FormEvent) => {
         e?.preventDefault();
         if (!content.trim() || isLoading) return;
@@ -42,54 +60,31 @@ export default function PageAccueil() {
         setError(null);
         setCurrentMemo(null);
 
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-
         try {
-            const response = await fetch('/api/memos', {
+            const response = await fetchWithRetry('/api/memos', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ content: content.trim() }),
-                signal: controller.signal
             });
-
-            clearTimeout(timeoutId);
 
             if (!response.ok) {
-                let errorMessage = `Erreur serveur: ${response.status}`;
-                try {
-                    const errorData = await response.json();
-                    errorMessage = errorData.message || errorMessage;
-                } catch {
-                    // Si le parsing JSON échoue, on utilise le message par défaut
-                }
-                throw new Error(errorMessage);
+                throw new MemoError(
+                    ErrorCode.API_ERROR,
+                    'Erreur lors de la génération du mémo'
+                );
             }
 
-            const data = await response.json().catch(() => {
-                throw new Error('Réponse invalide du serveur');
-            });
+            const data = await response.json();
 
-            const { memo } = data;
-
-            // Simuler le streaming côté client
-            for (const section of memo.sections) {
-                setCurrentMemo(prev => prev ? { ...prev, sections: [...prev.sections, section] } : { sections: [section], metadata: memo.metadata });
-                await new Promise(resolve => setTimeout(resolve, 500));
-            }
-
+            // On met à jour le mémo une fois qu'on a toutes les données
+            setCurrentMemo(data.memo);
             setShowConfetti(true);
-            setTimeout(() => setShowConfetti(false), 5000);
-            setContent('');
-        } catch (err) {
-            console.error('Request error:', err);
-            const errorMessage = err instanceof Error ? err.message : 'Une erreur inattendue est survenue';
-            setError(errorMessage);
-            setCurrentMemo(null);
+        } catch (error) {
+            setError(error instanceof MemoError ? error.message : 'Une erreur est survenue');
         } finally {
             setIsLoading(false);
         }
-    }, [content, isLoading]);
+    }, [content, isLoading, fetchWithRetry]);
 
     return (
         <div className="flex flex-col h-screen bg-[#121212] text-white overflow-hidden">
@@ -162,7 +157,7 @@ export default function PageAccueil() {
                         </div>
                     )}
 
-                    <div className="w-full max-w-[640px]">
+                    <div className="w-full max-w-[800px] px-8">
                         <MemoList
                             memos={currentMemo ? [currentMemo] : []}
                             isLoading={isLoading}

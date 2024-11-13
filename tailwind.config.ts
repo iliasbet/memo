@@ -49,6 +49,9 @@ const config: Config = {
           foreground: 'hsl(var(--secondary-foreground))',
         },
       },
+      fontFamily: {
+        lexend: ['var(--font-lexend)'],
+      },
     },
   },
 };

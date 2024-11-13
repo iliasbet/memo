@@ -31,7 +31,7 @@ const Input: React.FC<InputProps> = memo(({ value, onChange, onSubmit, isLoading
         placeholder={placeholder}
         disabled={isLoading}
         className={cn(
-          "w-[420px] px-5 py-3 pr-14 bg-[#1E1E1E] rounded-full text-white placeholder-gray-400 focus:outline-none disabled:opacity-50 font-lexend"
+          "w-[420px] px-5 py-3 pr-14 bg-[#1E1E1E] rounded-full text-white placeholder-gray-400 focus:outline-none disabled:opacity-50 font-lexend font-light"
         )}
       />
       <button

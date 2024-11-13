@@ -9,11 +9,11 @@ export const MemoSection: React.FC<MemoSectionProps> = memo(({ type, content, co
     return (
         <div className="relative w-full h-full">
             <div
-                className="relative w-full h-full rounded-2xl flex flex-col items-center justify-center px-16 text-center"
+                className="relative w-full h-full rounded-2xl flex flex-col items-center justify-center px-20 text-center"
                 style={{ backgroundColor: color }}
             >
-                <h3 className="font-semibold text-xs uppercase tracking-wider mb-6 opacity-80">{type}</h3>
-                <p className="text-lg font-semibold leading-relaxed">{content}</p>
+                <h3 className="font-medium text-xs uppercase tracking-wider mb-6 opacity-80">{type}</h3>
+                <p className="text-lg font-medium leading-relaxed">{content}</p>
             </div>
         </div>
     );

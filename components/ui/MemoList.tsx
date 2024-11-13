@@ -1,8 +1,11 @@
 import React, { useState, useCallback, memo } from 'react';
 import { ChevronLeft, ChevronRight, RotateCw } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Memo, MemoSection as MemoSectionType } from '@/types';
 import { MEMO_COLORS } from '@/constants/colors';
 import { MemoSection } from './MemoSection';
+import { LoadingCard } from './LoadingCard';
+import { DefaultCard } from './DefaultCard';
 
 // Composant d'affichage de la liste des mémos
 // Gère la navigation et l'affichage des sections de mémo
@@ -15,112 +18,128 @@ interface MemoListProps {
 }
 
 export const MemoList: React.FC<MemoListProps> = memo(({ memos, isLoading, currentStreamingContent }) => {
-    // État pour suivre la section actuellement affichée
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [direction, setDirection] = useState(0); // -1 pour gauche, 1 pour droite
+    const [isRewinding, setIsRewinding] = useState(false);
     const currentMemo = memos[memos.length - 1];
-    let currentSection: MemoSectionType | null = null;
-
-    if (currentStreamingContent) {
-        try {
-            const data = JSON.parse(currentStreamingContent);
-            if (data.type === 'update') {
-                currentSection = data.section;
-            }
-        } catch (error) {
-            console.error('Erreur parsing streaming content:', error);
-        }
-    }
-
-    if (!currentSection && currentMemo?.sections.length > 0) {
-        currentSection = currentMemo.sections[currentIndex];
-    }
-
-    const totalSections = currentMemo?.sections.length || 0;
-    const isFirstSection = currentIndex === 0;
-    const isLastSection = currentIndex === totalSections - 1;
-
-    const handlePrevious = useCallback(() => {
-        if (!isFirstSection) {
-            setCurrentIndex(prev => prev - 1);
-        }
-    }, [isFirstSection]);
+    const sections = currentMemo?.sections || [];
+    const isLastSection = currentIndex === sections.length - 1;
 
     const handleNext = useCallback(() => {
-        if (!isLastSection) {
+        if (isLastSection) {
+            setIsRewinding(true);
+            const rewindDuration = 800; // Durée totale du rewind
+            const stepDuration = rewindDuration / sections.length;
+
+            // Animation de rewind rapide
+            sections.forEach((_, index) => {
+                const reverseIndex = sections.length - 1 - index;
+                setTimeout(() => {
+                    setCurrentIndex(reverseIndex);
+                }, stepDuration * index);
+            });
+
+            // Réinitialisation de l'état
+            setTimeout(() => {
+                setIsRewinding(false);
+                setCurrentIndex(0);
+            }, rewindDuration);
+        } else {
+            setDirection(1);
             setCurrentIndex(prev => prev + 1);
         }
-    }, [isLastSection]);
+    }, [isLastSection, sections.length]);
 
-    const handleRestart = useCallback(() => {
-        setCurrentIndex(0);
+    const handlePrevious = useCallback(() => {
+        setDirection(-1);
+        setCurrentIndex(prev => prev - 1);
     }, []);
 
-    const isCurrentSectionLoading = (section: MemoSectionType | null) => {
-        if (!currentStreamingContent || !section) return false;
-        try {
-            const data = JSON.parse(currentStreamingContent);
-            return data.type === 'update' && data.section.type === section.type;
-        } catch {
-            return false;
-        }
+    const slideVariants = {
+        enter: (direction: number) => ({
+            x: direction > 0 ? 1000 : -1000,
+            opacity: 0
+        }),
+        center: {
+            zIndex: 1,
+            x: 0,
+            opacity: 1
+        },
+        exit: (direction: number) => ({
+            zIndex: 0,
+            x: direction < 0 ? 1000 : -1000,
+            opacity: 0
+        })
     };
 
     return (
-        <div className="relative w-full max-w-2xl mx-auto">
-            <div className="relative w-full aspect-[16/9]">
-                {!currentSection && !memos.length ? (
-                    <div className="absolute w-full h-full rounded-2xl bg-[#1A1A1A] flex items-center justify-center">
-                        <p className="text-lg text-gray-400">
-                            Entrez un sujet pour générer un mémo
-                        </p>
-                    </div>
-                ) : (
+        <div className="flex justify-center items-center w-full">
+            <div className="relative w-full max-w-[800px] aspect-[16/9]">
+                <div className="absolute inset-0 rounded-lg shadow-lg overflow-hidden">
+                    <AnimatePresence initial={false} custom={direction}>
+                        {isLoading ? (
+                            <LoadingCard />
+                        ) : currentMemo && sections[currentIndex] ? (
+                            <motion.div
+                                key={currentIndex}
+                                custom={direction}
+                                variants={slideVariants}
+                                initial="enter"
+                                animate="center"
+                                exit="exit"
+                                transition={{
+                                    x: { type: "spring", stiffness: 300, damping: 30 },
+                                    opacity: { duration: 0.2 },
+                                }}
+                                className={`absolute inset-0 ${isRewinding ? 'transition-all duration-200' : ''}`}
+                            >
+                                <MemoSection
+                                    type={sections[currentIndex].type}
+                                    content={sections[currentIndex].contenu}
+                                    color={sections[currentIndex].couleur}
+                                    isActive={true}
+                                    isLoading={false}
+                                />
+                            </motion.div>
+                        ) : (
+                            <DefaultCard />
+                        )}
+                    </AnimatePresence>
+                </div>
+
+                {/* Navigation en dehors de la carte */}
+                {!isLoading && sections.length > 1 && (
                     <>
-                        {totalSections > 0 && (
+                        {/* Bouton précédent */}
+                        {currentIndex > 0 && (
                             <button
-                                className={`absolute -left-16 top-1/2 -translate-y-1/2 w-10 h-10 
-                                    ${isFirstSection
-                                        ? 'bg-black/10 cursor-not-allowed'
-                                        : 'bg-black/20 hover:bg-black/40 cursor-pointer'} 
-                                    rounded-full flex items-center justify-center transition-colors`}
                                 onClick={handlePrevious}
-                                disabled={isFirstSection}
-                                title={isFirstSection ? "Début du mémo" : "Section précédente"}
-                                aria-label={isFirstSection ? "Début du mémo" : "Section précédente"}
+                                className="absolute left-[-48px] top-1/2 transform -translate-y-1/2"
+                                aria-label="Section précédente"
+                                disabled={isRewinding}
                             >
-                                <ChevronLeft className={`w-6 h-6 ${isFirstSection ? 'text-white/50' : 'text-white'}`} />
+                                <ChevronLeft className="w-8 h-8 text-gray-400 hover:text-white transition-colors" />
                             </button>
                         )}
 
-                        {currentSection && (
-                            <MemoSection
-                                type={currentSection.type}
-                                content={currentSection.contenu}
-                                color={MEMO_COLORS[currentSection.type as keyof typeof MEMO_COLORS]}
-                                isActive={true}
-                                isLoading={isCurrentSectionLoading(currentSection)}
-                            />
-                        )}
-
-                        {totalSections > 0 && (
-                            <button
-                                className="absolute -right-16 top-1/2 -translate-y-1/2 w-10 h-10 
-                                    bg-black/20 hover:bg-black/40 cursor-pointer
-                                    rounded-full flex items-center justify-center transition-colors"
-                                onClick={isLastSection ? handleRestart : handleNext}
-                                title={isLastSection ? "Recommencer le mémo" : "Section suivante"}
-                                aria-label={isLastSection ? "Recommencer le mémo" : "Section suivante"}
-                            >
-                                {isLastSection ? (
-                                    <RotateCw className="w-6 h-6 text-white" />
-                                ) : (
-                                    <ChevronRight className="w-6 h-6 text-white" />
-                                )}
-                            </button>
-                        )}
+                        {/* Bouton suivant/recommencer */}
+                        <button
+                            onClick={handleNext}
+                            className="absolute right-[-48px] top-1/2 transform -translate-y-1/2"
+                            aria-label={isLastSection ? "Recommencer" : "Section suivante"}
+                            disabled={isRewinding}
+                        >
+                            {isLastSection ? (
+                                <RotateCw className="w-8 h-8 text-gray-400 hover:text-white transition-colors" />
+                            ) : (
+                                <ChevronRight className="w-8 h-8 text-gray-400 hover:text-white transition-colors" />
+                            )}
+                        </button>
                     </>
                 )}
             </div>
         </div>
     );
 });
+
+MemoList.displayName = 'MemoList';

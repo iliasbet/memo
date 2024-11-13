@@ -15,6 +15,11 @@
     --memo-margin-top: 0rem;
     --input-margin-bottom: 2rem;
   }
+
+  html {
+    font-family: var(--font-lexend);
+    font-weight: 500;
+  }
 }
 
 body {
