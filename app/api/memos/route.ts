@@ -10,11 +10,14 @@ function truncateContent(content: string): string {
     return content.length > 140 ? content.slice(0, 137) + '...' : content;
 }
 
-export const runtime = 'edge' // optional
+// export const runtime = 'edge' // optional
 export const maxDuration = 60
 
 // POST: Crée un nouveau mémo à partir du contenu fourni
 export async function POST(request: Request) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 55000); // 55 secondes
+
     try {
         const { content } = await request.json();
 
@@ -25,14 +28,26 @@ export async function POST(request: Request) {
             );
         }
 
-        Logger.log(LogLevel.INFO, 'Génération de mémo', { content });
+        Logger.log(LogLevel.INFO, 'Début de la génération de mémo', { content, timestamp: Date.now() });
 
         const memo = await generateMemo(content);
+        clearTimeout(timeoutId);
+
+        Logger.log(LogLevel.INFO, 'Mémo généré avec succès', { memo, timestamp: Date.now() });
 
         return NextResponse.json({ memo });
 
     } catch (error) {
-        Logger.log(LogLevel.ERROR, 'Erreur API', { error });
+        clearTimeout(timeoutId);
+        Logger.log(LogLevel.ERROR, 'Erreur lors de la génération du mémo', { error, timestamp: Date.now() });
+
+        if ((error as Error).name === 'AbortError') {
+            return NextResponse.json(
+                { message: 'La requête a pris trop de temps à répondre.' },
+                { status: 504 }
+            );
+        }
+
         return NextResponse.json(
             { message: error instanceof Error ? error.message : 'Erreur serveur' },
             { status: 500 }

@@ -194,59 +194,50 @@ export const generateMemo = async (
     };
 
     try {
-        // 1. Objectif
-        const objectifSection = await generateSection(content, objectifPrompt, SectionType.Objectif, context);
-        sections.push(objectifSection);
+        // Générer Objectif et Accroche en parallèle
+        const [objectifSection, accrocheSection] = await Promise.all([
+            generateSection(content, objectifPrompt, SectionType.Objectif, context),
+            generateSection(content, accrochePrompt, SectionType.Accroche, context)
+        ]);
+
+        sections.push(objectifSection, accrocheSection);
         onProgress?.(objectifSection);
+        onProgress?.(accrocheSection);
         context.objective = objectifSection.contenu;
 
-        // 2. Accroche
-        const accrocheSection = await generateSection(content, accrochePrompt, SectionType.Accroche, context);
-        sections.push(accrocheSection);
-        onProgress?.(accrocheSection);
-
-        // 3. Parties principales (3 itérations)
+        // Génération des parties principales séquentiellement ou en parallèle si possible
         for (let partIndex = 0; partIndex < 3; partIndex++) {
             context.currentPartIndex = partIndex;
 
-            // Titre de la partie
-            const transitionSection = await generateSection(content, transitionPrompt, SectionType.Transition, context);
-            sections.push(transitionSection);
+            const [transitionSection, ideeSection, argumentSection, exempleSection] = await Promise.all([
+                generateSection(content, transitionPrompt, SectionType.Transition, context),
+                generateSection(content, ideePrompt, SectionType.Idee, context),
+                generateSection(content, argumentPrompt, SectionType.Argument, context),
+                generateSection(content, exemplePrompt, SectionType.Exemple, context)
+            ]);
+
+            sections.push(transitionSection, ideeSection, argumentSection, exempleSection);
             onProgress?.(transitionSection);
-
-            // Idée principale
-            const ideeSection = await generateSection(content, ideePrompt, SectionType.Idee, context);
-            sections.push(ideeSection);
             onProgress?.(ideeSection);
-
-            // Argument
-            const argumentSection = await generateSection(content, argumentPrompt, SectionType.Argument, context);
-            sections.push(argumentSection);
             onProgress?.(argumentSection);
-
-            // Exemple
-            const exempleSection = await generateSection(content, exemplePrompt, SectionType.Exemple, context);
-            sections.push(exempleSection);
             onProgress?.(exempleSection);
 
-            // Mise à jour du contexte
             context.ideaGroups.push({
                 mainIdea: ideeSection.contenu,
                 followUpIdeas: []
             });
         }
 
-        // 4. Sections finales
-        const resumeSection = await generateSection(content, resumePrompt, SectionType.Resume, context);
-        sections.push(resumeSection);
+        // Générer les sections finales
+        const [resumeSection, acquisSection, ouvertureSection] = await Promise.all([
+            generateSection(content, resumePrompt, SectionType.Resume, context),
+            generateSection(content, acquisPrompt, SectionType.Acquis, context),
+            generateSection(content, ouverturePrompt, SectionType.Ouverture, context)
+        ]);
+
+        sections.push(resumeSection, acquisSection, ouvertureSection);
         onProgress?.(resumeSection);
-
-        const acquisSection = await generateSection(content, acquisPrompt, SectionType.Acquis, context);
-        sections.push(acquisSection);
         onProgress?.(acquisSection);
-
-        const ouvertureSection = await generateSection(content, ouverturePrompt, SectionType.Ouverture, context);
-        sections.push(ouvertureSection);
         onProgress?.(ouvertureSection);
 
         return {
