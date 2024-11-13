@@ -52,6 +52,15 @@ const config: Config = {
       fontFamily: {
         lexend: ['var(--font-lexend)'],
       },
+      animation: {
+        'pulse-subtle': 'pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+      },
+      keyframes: {
+        'pulse-subtle': {
+          '0%, 100%': { opacity: '0.5' },
+          '50%': { opacity: '0.3' },
+        },
+      },
     },
   },
 };

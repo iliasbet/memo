@@ -13,7 +13,7 @@ export const MemoSection: React.FC<MemoSectionProps> = memo(({ type, content, co
                 style={{ backgroundColor: color }}
             >
                 <h3 className="font-medium text-xs uppercase tracking-wider mb-6 opacity-80">{type}</h3>
-                <p className="text-lg font-medium leading-relaxed">{content}</p>
+                <p className="text-2xl font-medium leading-relaxed">{content}</p>
             </div>
         </div>
     );
