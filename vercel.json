@@ -1,17 +1,3 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next",
-      "config": {
-        "outputDirectory": ".next"
-      }
-    }
-  ],
-  "functions": {
-    "app/api/memos/route.ts": {
-      "maxDuration": 60
-    }
-  }
+  "version": 2
 }

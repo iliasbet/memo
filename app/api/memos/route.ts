@@ -10,6 +10,9 @@ function truncateContent(content: string): string {
     return content.length > 140 ? content.slice(0, 137) + '...' : content;
 }
 
+export const runtime = 'edge' // optional
+export const maxDuration = 60
+
 // POST: Crée un nouveau mémo à partir du contenu fourni
 export async function POST(request: Request) {
     try {
