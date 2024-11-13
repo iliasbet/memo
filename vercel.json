@@ -8,5 +8,10 @@
         "outputDirectory": ".next"
       }
     }
-  ]
+  ],
+  "functions": {
+    "app/api/memos/route.ts": {
+      "maxDuration": 60
+    }
+  }
 }
