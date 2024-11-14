@@ -11,7 +11,17 @@ export async function POST() {
             payment_method_types: ['card'],
             line_items: [
                 {
-                    price: process.env.STRIPE_PRICE_ID,
+                    price_data: {
+                        currency: 'eur',
+                        product_data: {
+                            name: 'Memo Premium',
+                            description: 'Accès illimité à Memo',
+                        },
+                        unit_amount: 999,
+                        recurring: {
+                            interval: 'month'
+                        }
+                    },
                     quantity: 1,
                 },
             ],
