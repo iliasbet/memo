@@ -1,15 +1,13 @@
 // memo/app/layout.tsx
 import React from 'react';
 import './globals.css';
-import { Lexend } from 'next/font/google';
+import { Lexend_Deca } from 'next/font/google';
+import MenuWrapper from '@/components/ui/MenuWrapper';
+import { AuthProvider } from '@/contexts/AuthContext';
 
-// Layout principal de l'application Memo
-// Configure la structure HTML de base, les polices et les styles globaux
-
-// Configuration de la police Lexend Deca avec chargement optimisé
-const lexend = Lexend({
+const lexend = Lexend_Deca({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600'],
+  weight: ['400', '600'], // Regular et SemiBold
   variable: '--font-lexend',
 });
 
@@ -25,8 +23,11 @@ const RootLayout: React.FC<RootLayoutProps> = ({ children }) => (
       <link rel="manifest" href="/manifest.json" />
       <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
     </head>
-    <body className={`${lexend.variable} font-lexend font-semibold bg-[#121212] text-white`}>
-      {children}
+    <body className={`${lexend.variable} font-sans`}>
+      <AuthProvider>
+        <MenuWrapper />
+        {children}
+      </AuthProvider>
     </body>
   </html>
 );

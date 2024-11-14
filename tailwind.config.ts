@@ -50,7 +50,8 @@ const config: Config = {
         },
       },
       fontFamily: {
-        lexend: ['var(--font-lexend)'],
+        sans: ['var(--font-lexend)', 'Helvetica', 'Arial', 'sans-serif'],
+        lexend: ['var(--font-lexend)', 'Helvetica', 'Arial', 'sans-serif'],
       },
       animation: {
         'pulse-subtle': 'pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
