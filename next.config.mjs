@@ -1,3 +1,5 @@
+import withPWA from 'next-pwa';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     async headers() {
@@ -13,6 +15,11 @@ const nextConfig = {
             }
         ]
     }
-}
+};
 
-module.exports = nextConfig 
+const withPWAConfig = withPWA({
+    dest: 'public',
+    disable: process.env.NODE_ENV === 'development'
+});
+
+export default withPWAConfig(nextConfig); 

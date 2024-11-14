@@ -1,38 +1,71 @@
 'use client';
-import Image from 'next/image';
+
+// 1. React et Next.js
 import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
+
+// 2. Composants externes
 import ReactConfetti from 'react-confetti';
+
+// 3. Composants internes
 import { MemoList } from '@/components/ui/MemoList';
 import { Input } from "@/components/ui/Input";
-import type { Memo } from '@/types';
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay';
+
+// 4. Types et constantes
+import type { Memo } from '@/types';
 import { MemoError, ErrorCode } from '@/types/errors';
 
 // Page d'accueil de l'application Memo
 // Gère l'interface principale et la saisie du sujet du mémo
 
-export default function PageAccueil() {
+// Extraire la logique de gestion d'état dans un custom hook
+const useMemoState = () => {
     const [content, setContent] = useState('');
     const [currentMemo, setCurrentMemo] = useState<Memo | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showConfetti, setShowConfetti] = useState(false);
+
+    return {
+        content,
+        setContent,
+        currentMemo,
+        setCurrentMemo,
+        isLoading,
+        setIsLoading,
+        error,
+        setError,
+        showConfetti,
+        setShowConfetti
+    };
+};
+
+// Extraire la logique de gestion de la fenêtre
+const useWindowSize = () => {
     const [windowSize, setWindowSize] = useState({
         width: typeof window !== 'undefined' ? window.innerWidth : 0,
         height: typeof window !== 'undefined' ? window.innerHeight : 0
     });
 
-    const handleResize = useCallback(() => {
-        setWindowSize({
-            width: window.innerWidth,
-            height: window.innerHeight
-        });
-    }, []);
-
     useEffect(() => {
+        const handleResize = () => {
+            setWindowSize({
+                width: window.innerWidth,
+                height: window.innerHeight
+            });
+        };
+
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-    }, [handleResize]);
+    }, []);
+
+    return windowSize;
+};
+
+export default function PageAccueil() {
+    const { content, setContent, currentMemo, setCurrentMemo, isLoading, setIsLoading, error, setError, showConfetti, setShowConfetti } = useMemoState();
+    const windowSize = useWindowSize();
 
     const fetchWithRetry = async (url: string, options: RequestInit, retries = 3) => {
         for (let i = 0; i < retries; i++) {

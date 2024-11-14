@@ -8,7 +8,7 @@ import {
     ideePrompt,
     argumentPrompt,
     exemplePrompt,
-    transitionPrompt,
+    titrePrompt,
     resumePrompt,
     acquisPrompt,
     ouverturePrompt
@@ -43,16 +43,34 @@ const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 seconde
 
 // Fonction utilitaire pour réessayer les appels API en cas d'échec
-const withRetry = async <T>(fn: () => Promise<T>): Promise<T> => {
+const withRetry = async <T>(
+    fn: () => Promise<T>,
+    options: {
+        maxRetries?: number,
+        baseDelay?: number,
+        context?: Record<string, unknown>,
+        onRetry?: (attempt: number, error: Error) => void
+    } = {}
+): Promise<T> => {
+    const {
+        maxRetries = 3,
+        baseDelay = 1000,
+        context = {},
+        onRetry
+    } = options;
+
     let lastError: Error;
 
-    for (let i = 0; i < MAX_RETRIES; i++) {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
             return await fn();
         } catch (error) {
             lastError = error as Error;
-            if (i < MAX_RETRIES - 1) {
-                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * (i + 1)));
+
+            if (attempt < maxRetries - 1) {
+                const delay = baseDelay * Math.pow(2, attempt);
+                onRetry?.(attempt, lastError);
+                await new Promise(resolve => setTimeout(resolve, delay));
             }
         }
     }
@@ -205,19 +223,23 @@ export const generateMemo = async (
         onProgress?.(accrocheSection);
         context.objective = objectifSection.contenu;
 
-        // Génération des parties principales séquentiellement ou en parallèle si possible
+        // Génération séquentielle des parties pour assurer la cohérence des titres
         for (let partIndex = 0; partIndex < 3; partIndex++) {
             context.currentPartIndex = partIndex;
 
-            const [transitionSection, ideeSection, argumentSection, exempleSection] = await Promise.all([
-                generateSection(content, transitionPrompt, SectionType.Transition, context),
+            // Générer d'abord le titre pour avoir le contexte
+            const titreSection = await generateSection(content, titrePrompt, SectionType.Titre, context);
+            sections.push(titreSection);
+            onProgress?.(titreSection);
+
+            // Générer le reste des sections en parallèle
+            const [ideeSection, argumentSection, exempleSection] = await Promise.all([
                 generateSection(content, ideePrompt, SectionType.Idee, context),
                 generateSection(content, argumentPrompt, SectionType.Argument, context),
                 generateSection(content, exemplePrompt, SectionType.Exemple, context)
             ]);
 
-            sections.push(transitionSection, ideeSection, argumentSection, exempleSection);
-            onProgress?.(transitionSection);
+            sections.push(ideeSection, argumentSection, exempleSection);
             onProgress?.(ideeSection);
             onProgress?.(argumentSection);
             onProgress?.(exempleSection);

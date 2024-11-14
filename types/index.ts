@@ -6,7 +6,7 @@ export enum SectionType {
     Idee = 'idee',
     Argument = 'argument',
     Exemple = 'exemple',
-    Transition = 'transition',
+    Titre = 'titre',
     Resume = 'resume',
     Acquis = 'acquis',
     Ouverture = 'ouverture',
@@ -14,18 +14,18 @@ export enum SectionType {
 
 // Structure d'une section de mémo
 export interface MemoSection {
-    type: SectionType;
-    contenu: string;
-    couleur: string;
+    readonly type: SectionType;
+    readonly contenu: string;
+    readonly couleur: string;
 }
 
 // Structure complète d'un mémo
 export interface Memo {
-    id?: number;
-    sections: MemoSection[];
-    metadata: {
-        createdAt: string;
-        topic: string;
+    readonly id?: number;
+    readonly sections: readonly MemoSection[];
+    readonly metadata: {
+        readonly createdAt: string;
+        readonly topic: string;
     };
 }
 

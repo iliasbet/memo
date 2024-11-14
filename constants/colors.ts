@@ -7,7 +7,7 @@ export const MEMO_COLORS = {
     idee: '#1A1A1A',
     argument: '#08489d',
     exemple: '#9f770d',
-    transition: '#545454',
+    titre: '#545454',
     resume: '#6A0DAD',
     acquis: '#067934',
     ouverture: '#FF69B4'

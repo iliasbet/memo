@@ -1,4 +1,4 @@
-import React, { useState, useCallback, memo } from 'react';
+import React, { useState, useCallback, memo, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, RotateCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Memo, MemoSection as MemoSectionType } from '@/types';
@@ -24,6 +24,12 @@ export const MemoList: React.FC<MemoListProps> = memo(({ memos, isLoading, curre
     const currentMemo = memos[memos.length - 1];
     const sections = currentMemo?.sections || [];
     const isLastSection = currentIndex === sections.length - 1;
+
+    useEffect(() => {
+        setCurrentIndex(0);
+        setDirection(0);
+        setIsRewinding(false);
+    }, [currentMemo]);
 
     const handleNext = useCallback(() => {
         if (isLastSection) {

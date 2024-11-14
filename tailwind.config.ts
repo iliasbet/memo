@@ -61,6 +61,14 @@ const config: Config = {
           '50%': { opacity: '0.3' },
         },
       },
+      fontSize: {
+        'memo-title-mobile': ['0.65rem', { lineHeight: '0.9rem' }],
+        'memo-title-tablet': ['0.7rem', { lineHeight: '1rem' }],
+        'memo-title-desktop': ['0.75rem', { lineHeight: '1.1rem' }],
+        'memo-content-mobile': ['0.875rem', { lineHeight: '1.25rem' }],
+        'memo-content-tablet': ['1rem', { lineHeight: '1.5rem' }],
+        'memo-content-desktop': ['1.5rem', { lineHeight: '2rem' }],
+      },
     },
   },
 };
