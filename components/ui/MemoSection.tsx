@@ -1,42 +1,24 @@
 import React, { memo, useMemo } from 'react';
-import { MemoSectionProps } from '@/types';
+import { MemoSectionProps, Duration } from '@/types';
 import { LoadingCard } from './LoadingCard';
 
-export const MemoSection: React.FC<MemoSectionProps> = memo(({ type, content, color, isActive, isLoading = false }) => {
+interface ExtendedMemoSectionProps extends Omit<MemoSectionProps, 'duration'> {
+    duration?: Duration;
+}
+
+export const MemoSection: React.FC<ExtendedMemoSectionProps> = memo(({ type, content, color, isActive, isLoading = false, title, duration }) => {
     if (!isActive) return null;
     if (isLoading) return <LoadingCard />;
 
-    const balanceText = (text: string, options = {
-        minLength: 45,
-        maxLength: 55,
-        balanceRatio: 0.8
-    }) => {
-        if (text.length <= options.minLength) return text;
+    const formatDuration = (duration?: Duration | number): string => {
+        if (!duration) return '';
 
-        const words = text.split(' ');
-        const midPoint = Math.floor(words.length / 2);
-
-        let bestSplit = { index: midPoint, score: Infinity };
-
-        for (let i = 1; i < words.length - 1; i++) {
-            const firstPart = words.slice(0, i).join(' ');
-            const secondPart = words.slice(i).join(' ');
-
-            const score = Math.abs(firstPart.length - secondPart.length) /
-                Math.max(firstPart.length, secondPart.length);
-
-            if (score < bestSplit.score) {
-                bestSplit = { index: i, score };
-            }
+        if (typeof duration === 'number') {
+            return `${duration} min`; // Rétrocompatibilité
         }
 
-        return bestSplit.score > 0.3 ? text :
-            `${words.slice(0, bestSplit.index).join(' ')}\n${words.slice(bestSplit.index).join(' ')}`;
+        return `${duration.value} ${duration.unit}`;
     };
-
-    const balancedText = useMemo(() => {
-        return balanceText(content);
-    }, [content]);
 
     return (
         <div className="relative w-full h-full">
@@ -45,18 +27,36 @@ export const MemoSection: React.FC<MemoSectionProps> = memo(({ type, content, co
                 style={{ backgroundColor: color }}
             >
                 <div className="absolute inset-0 opacity-[0.15] noise-bg" />
-                <div className="relative z-10">
-                    <h3 className="font-medium text-memo-title-mobile sm:text-memo-title-tablet md:text-memo-title-desktop uppercase tracking-wider mb-4 sm:mb-6 opacity-40">
-                        {type}
-                    </h3>
-                    <p className="text-memo-content-mobile sm:text-memo-content-tablet md:text-memo-content-desktop font-normal leading-relaxed whitespace-pre-line">
-                        {balancedText}
-                    </p>
+
+                <h3 className="absolute top-10 left-0 right-0 font-medium text-memo-title-mobile sm:text-memo-title-tablet md:text-memo-title-desktop uppercase tracking-wider opacity-40 w-full">
+                    {type}
+                </h3>
+
+                <div className="relative z-10 flex flex-col items-center justify-center max-w-2xl my-auto">
+                    {title ? (
+                        <>
+                            <h4 className="text-5xl font-medium mb-8 tracking-wide">
+                                {title}
+                            </h4>
+                            <p className="text-base sm:text-lg md:text-xl font-normal leading-relaxed">
+                                {content}
+                            </p>
+                        </>
+                    ) : (
+                        <p className="text-base sm:text-lg md:text-xl font-normal leading-relaxed">
+                            {content}
+                        </p>
+                    )}
                 </div>
+
+                {duration && (
+                    <div className="absolute bottom-10 left-0 right-0 text-sm opacity-40">
+                        Durée : {formatDuration(duration)}
+                    </div>
+                )}
             </div>
         </div>
     );
 });
 
-MemoSection.displayName = 'MemoSection';
 MemoSection.displayName = 'MemoSection';

@@ -105,6 +105,8 @@ export const MemoList: React.FC<MemoListProps> = memo(({ memos, isLoading, curre
                                     color={sections[currentIndex].couleur}
                                     isActive={true}
                                     isLoading={false}
+                                    title={sections[currentIndex].titre}
+                                    duration={sections[currentIndex].duree}
                                 />
                             </motion.div>
                         ) : (

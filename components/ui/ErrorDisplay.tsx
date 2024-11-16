@@ -1,42 +1,52 @@
 import React from 'react';
-import { MemoError, ErrorCode } from '@/types/errors';
+import { motion } from 'framer-motion';
+import { AlertCircle } from 'lucide-react';
+import { MemoError } from '@/types/errors';
 
 interface ErrorDisplayProps {
   error: MemoError;
   onRetry?: () => void;
 }
 
-const errorMessages: Record<ErrorCode, string> = {
-  [ErrorCode.API_ERROR]: "Une erreur est survenue lors de la communication avec l'API. Veuillez réessayer.",
-  [ErrorCode.OPENAI_ERROR]: "Le service de génération est temporairement indisponible. Veuillez réessayer plus tard.",
-  [ErrorCode.PARSING_ERROR]: "Le format des données reçues est invalide. Notre équipe a été notifiée.",
-  [ErrorCode.NETWORK_ERROR]: "Problème de connexion réseau. Vérifiez votre connexion internet.",
-  [ErrorCode.VALIDATION_ERROR]: "Les données générées ne respectent pas le format attendu. Veuillez réessayer.",
-  [ErrorCode.TIMEOUT_ERROR]: "La requête a expiré. Veuillez réessayer plus tard."
-};
-
 export const ErrorDisplay: React.FC<ErrorDisplayProps> = React.memo(({ error, onRetry }) => {
-  const message = errorMessages[error.code] || "Une erreur inattendue est survenue. Veuillez réessayer.";
+  // Message utilisateur simplifié et rassurant
+  const message = "Oups ! La génération du memo n'a pas fonctionné... Réessayons !";
+
+  // Log l'erreur réelle dans la console
+  console.error('Error details:', error);
 
   return (
-    <div className="rounded-lg bg-red-50 p-4 my-4" role="alert" aria-live="assertive">
-      <div className="flex items-start">
-        <svg className="h-5 w-5 text-red-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-        </svg>
-        <div className="ml-3">
-          <h3 className="text-sm font-medium text-red-800">{message}</h3>
-          {onRetry && (
-            <button
-              onClick={onRetry}
-              className="mt-2 text-sm font-medium text-red-600 hover:text-red-500"
-              aria-label="Réessayer"
-            >
-              Réessayer
-            </button>
-          )}
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 10 }}
+      transition={{ duration: 0.15 }}
+      style={{
+        position: 'fixed',
+        zIndex: 1000,
+        width: '100%',
+        maxWidth: '500px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        bottom: '100px'
+      }}
+    >
+      <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl shadow-lg overflow-hidden">
+        <div className="py-1">
+          <div className="flex items-center px-4 py-2.5 text-sm text-gray-300">
+            <AlertCircle className="w-4 h-4 mr-3 text-red-400" />
+            {message}
+            {onRetry && (
+              <button
+                onClick={onRetry}
+                className="ml-auto text-blue-500 hover:text-blue-400 transition-all duration-200"
+              >
+                Réessayer
+              </button>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 });

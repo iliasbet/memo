@@ -1,32 +1,22 @@
-// Configuration TypeScript pour l'application Memo
 {
   "compilerOptions": {
-    // Cible de compilation ES2017 pour la compatibilité navigateur
     "target": "ES2017",
-    // Bibliothèques TypeScript nécessaires
     "lib": [
       "dom",
       "dom.iterable",
       "esnext"
     ],
-    // Autorise l'utilisation de fichiers JavaScript
     "allowJs": true,
-    // Vérifie la compatibilité des types des bibliothèques
     "skipLibCheck": true,
-    // Active les vérifications strictes de TypeScript
     "strict": true,
-    // Désactive l'émission de fichiers (géré par Next.js)
     "noEmit": true,
-    // Configuration des modules
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    // Support de JSX pour React
     "jsx": "preserve",
     "incremental": true,
-    // Configuration des plugins et chemins
     "plugins": [
       {
         "name": "next"
@@ -39,16 +29,21 @@
       "@/types": [
         "./types"
       ]
-    }
+    },
+    "types": [
+      "jest",
+      "node"
+    ],
+    "baseUrl": "."
   },
-  // Fichiers inclus dans la compilation
   "include": [
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    "types/global.d.ts",
+    "__tests__/**/*.ts"
   ],
-  // Fichiers exclus de la compilation
   "exclude": [
     "node_modules"
   ]

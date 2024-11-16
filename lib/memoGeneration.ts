@@ -1,21 +1,46 @@
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
-import { MemoSection, SectionType, Memo } from '@/types';
+import { MemoSection, SectionType, Memo, Duration, MemoContext } from '@/types';
 import { MEMO_COLORS } from '@/constants/colors';
 import {
     objectifPrompt,
     accrochePrompt,
     ideePrompt,
-    argumentPrompt,
-    exemplePrompt,
-    titrePrompt,
+    conceptPrompt,
+    histoirePrompt,
+    techniquePrompt,
+    atelierPrompt,
     resumePrompt,
     acquisPrompt,
     ouverturePrompt
 } from '@/lib/prompts';
 import { ErrorHandler } from '@/lib/errorHandling';
-import { MemoContext } from '@/types';
 import { AI_MODELS, MODEL_CONFIG, DEFAULT_MODEL } from '@/constants/ai';
+import { Logger, LogLevel } from '@/lib/logger';
+import { MemoError, ErrorCode } from '@/types/errors';
+
+// Types et interfaces
+export interface AIResponse {
+    titre?: string;
+    contenu: string;
+    duree?: string;
+}
+
+export interface ParsedResponse {
+    titre?: string;
+    contenu: string;
+    duree?: Duration;
+}
+
+type OpenAIMessage = {
+    role: 'system' | 'user' | 'assistant';
+    content: string;
+}
+
+type AnthropicMessage = {
+    role: 'user' | 'assistant';
+    content: string;
+}
 
 // Service de génération de mémos utilisant OpenAI et Anthropic
 // Gère la création de sections de mémo de manière séquentielle
@@ -42,54 +67,7 @@ const anthropic = process.env.ANTHROPIC_API_KEY
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 seconde
 
-// Fonction utilitaire pour réessayer les appels API en cas d'échec
-const withRetry = async <T>(
-    fn: () => Promise<T>,
-    options: {
-        maxRetries?: number,
-        baseDelay?: number,
-        context?: Record<string, unknown>,
-        onRetry?: (attempt: number, error: Error) => void
-    } = {}
-): Promise<T> => {
-    const {
-        maxRetries = 3,
-        baseDelay = 1000,
-        context = {},
-        onRetry
-    } = options;
-
-    let lastError: Error;
-
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-        try {
-            return await fn();
-        } catch (error) {
-            lastError = error as Error;
-
-            if (attempt < maxRetries - 1) {
-                const delay = baseDelay * Math.pow(2, attempt);
-                onRetry?.(attempt, lastError);
-                await new Promise(resolve => setTimeout(resolve, delay));
-            }
-        }
-    }
-
-    throw lastError!;
-};
-
-// Définir les types pour les messages
-type OpenAIMessage = {
-    role: 'system' | 'user' | 'assistant';
-    content: string;
-}
-
-type AnthropicMessage = {
-    role: 'user' | 'assistant';
-    content: string;
-}
-
-const generateCompletion = async (
+export const generateCompletion = async (
     messages: OpenAIMessage[],
     modelType = DEFAULT_MODEL
 ) => {
@@ -121,10 +99,114 @@ const generateCompletion = async (
                 temperature: config.temperature,
                 max_tokens: config.max_tokens
             });
-            return anthropicCompletion.content[0].text;
+            return anthropicCompletion.content?.[0]?.text || '';
 
         default:
             throw new Error(`Provider non supporté: ${config.provider}`);
+    }
+};
+
+// Fonctions utilitaires exportées
+export const isValidAIResponse = (obj: any): obj is AIResponse => {
+    if (!obj || typeof obj !== 'object') return false;
+    if (typeof obj.contenu !== 'string' || obj.contenu.length === 0) return false;
+    if (obj.titre !== undefined && typeof obj.titre !== 'string') return false;
+    if (obj.duree !== undefined && typeof obj.duree !== 'string') return false;
+
+    if (obj.contenu.length > 400) return false;
+    if (obj.titre && obj.titre.length > 50) return false;
+
+    return true;
+};
+
+export const parseDuration = (dureeStr?: string): Duration | undefined => {
+    if (!dureeStr) return undefined;
+    const value = parseInt(dureeStr);
+    if (isNaN(value)) return undefined;
+
+    if (dureeStr.includes('heure')) return { value, unit: 'h' };
+    if (dureeStr.includes('minute')) return { value, unit: 'min' };
+    if (dureeStr.includes('jour')) return { value, unit: 'j' };
+
+    return { value, unit: 'min' };
+};
+
+export const parseFormattedResponse = (completion: string, type: SectionType): ParsedResponse => {
+    try {
+        Logger.log(LogLevel.INFO, `Début du parsing pour la section ${type}`, {
+            completion,
+            timestamp: new Date().toISOString()
+        });
+
+        // Nettoyage et extraction du JSON
+        const cleanedCompletion = completion.trim();
+        let jsonStr = cleanedCompletion;
+
+        // Si le JSON est entouré de backticks ou quotes, on les retire
+        if (cleanedCompletion.match(/^(`{3}|'{3}|"{3})/)) {
+            jsonStr = cleanedCompletion.replace(/^(`{3}|'{3}|"{3})/, '').replace(/(`{3}|'{3}|"{3})$/, '');
+        }
+
+        // Essayer de trouver un objet JSON valide
+        const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+            throw new MemoError(
+                ErrorCode.PARSING_ERROR,
+                `Pas de JSON trouvé dans la réponse pour la section ${type}`,
+                { completion: cleanedCompletion }
+            );
+        }
+
+        let parsed: unknown;
+        try {
+            parsed = JSON.parse(jsonMatch[0]);
+        } catch (e) {
+            throw new MemoError(
+                ErrorCode.PARSING_ERROR,
+                `JSON invalide pour la section ${type}`,
+                { error: e, json: jsonMatch[0] }
+            );
+        }
+
+        // Validation de la structure
+        if (!isValidAIResponse(parsed)) {
+            throw new MemoError(
+                ErrorCode.VALIDATION_ERROR,
+                `Structure de réponse invalide pour la section ${type}`,
+                { parsed }
+            );
+        }
+
+        // Validation supplémentaire du contenu
+        if (parsed.contenu.split('\n').length > 1) {
+            Logger.log(LogLevel.WARN, 'Contenu multi-lignes détecté, nettoyage...', {
+                original: parsed.contenu
+            });
+            parsed.contenu = parsed.contenu.replace(/\n/g, ' ').trim();
+        }
+
+        return {
+            titre: parsed.titre,
+            contenu: parsed.contenu,
+            duree: parsed.duree ? parseDuration(parsed.duree) : undefined
+        };
+    } catch (error) {
+        Logger.log(LogLevel.ERROR, 'Erreur lors du parsing', {
+            error,
+            type,
+            completion,
+            timestamp: new Date().toISOString()
+        });
+
+        // Enrichissement du contexte d'erreur
+        if (error instanceof MemoError) {
+            throw error;
+        }
+        throw new MemoError(
+            ErrorCode.PARSING_ERROR,
+            `Erreur inattendue lors du parsing de la section ${type}`,
+            { originalError: error }
+        );
     }
 };
 
@@ -135,31 +217,35 @@ export const generateSection = async (
     type: SectionType,
     context: MemoContext
 ): Promise<MemoSection> => {
-    const color = MEMO_COLORS[type] || '#000000';
+    const color = MEMO_COLORS[type as keyof typeof MEMO_COLORS] || '#000000';
 
     try {
-        const messages: OpenAIMessage[] = [
-            { role: 'system', content: prompt(context) },
-            { role: 'user', content }
+        const messages = [
+            { role: 'system' as const, content: prompt(context) },
+            { role: 'user' as const, content }
         ];
 
         const completion = await ErrorHandler.withRetry(
             () => generateCompletion(messages),
             {
+                maxRetries: MAX_RETRIES,
+                baseDelay: RETRY_DELAY,
                 context: { type, content }
             }
         );
 
+        const { titre, contenu, duree } = parseFormattedResponse(completion, type);
+
         return {
             type,
-            contenu: completion,
-            couleur: color
+            titre,
+            contenu,
+            couleur: color,
+            duree
         };
     } catch (error) {
-        throw await ErrorHandler.withRetry(
-            () => Promise.reject(error),
-            { context: { type, content } }
-        );
+        console.error(`Erreur lors de la génération de la section ${type}:`, error);
+        throw error;
     }
 };
 
@@ -212,7 +298,7 @@ export const generateMemo = async (
     };
 
     try {
-        // Générer Objectif et Accroche en parallèle
+        // 1. Générer Objectif et Accroche
         const [objectifSection, accrocheSection] = await Promise.all([
             generateSection(content, objectifPrompt, SectionType.Objectif, context),
             generateSection(content, accrochePrompt, SectionType.Accroche, context)
@@ -223,34 +309,26 @@ export const generateMemo = async (
         onProgress?.(accrocheSection);
         context.objective = objectifSection.contenu;
 
-        // Génération séquentielle des parties pour assurer la cohérence des titres
-        for (let partIndex = 0; partIndex < 3; partIndex++) {
-            context.currentPartIndex = partIndex;
+        // 2. Générer l'idée profonde unique
+        const ideeSection = await generateSection(content, ideePrompt, SectionType.Idee, context);
+        sections.push(ideeSection);
+        onProgress?.(ideeSection);
 
-            // Générer d'abord le titre pour avoir le contexte
-            const titreSection = await generateSection(content, titrePrompt, SectionType.Titre, context);
-            sections.push(titreSection);
-            onProgress?.(titreSection);
+        // 3. Générer les sections qui développent l'idée
+        const [conceptSection, histoireSection, techniqueSection, atelierSection] = await Promise.all([
+            generateSection(content, conceptPrompt, SectionType.Concept, context),
+            generateSection(content, histoirePrompt, SectionType.Histoire, context),
+            generateSection(content, techniquePrompt, SectionType.Technique, context),
+            generateSection(content, atelierPrompt, SectionType.Atelier, context)
+        ]);
 
-            // Générer le reste des sections en parallèle
-            const [ideeSection, argumentSection, exempleSection] = await Promise.all([
-                generateSection(content, ideePrompt, SectionType.Idee, context),
-                generateSection(content, argumentPrompt, SectionType.Argument, context),
-                generateSection(content, exemplePrompt, SectionType.Exemple, context)
-            ]);
+        sections.push(conceptSection, histoireSection, techniqueSection, atelierSection);
+        onProgress?.(conceptSection);
+        onProgress?.(histoireSection);
+        onProgress?.(techniqueSection);
+        onProgress?.(atelierSection);
 
-            sections.push(ideeSection, argumentSection, exempleSection);
-            onProgress?.(ideeSection);
-            onProgress?.(argumentSection);
-            onProgress?.(exempleSection);
-
-            context.ideaGroups.push({
-                mainIdea: ideeSection.contenu,
-                followUpIdeas: []
-            });
-        }
-
-        // Générer les sections finales
+        // 4. Générer la conclusion
         const [resumeSection, acquisSection, ouvertureSection] = await Promise.all([
             generateSection(content, resumePrompt, SectionType.Resume, context),
             generateSection(content, acquisPrompt, SectionType.Acquis, context),
@@ -270,7 +348,7 @@ export const generateMemo = async (
             }
         };
     } catch (error) {
-        console.error('Error in generateMemo:', error);
-        throw ErrorHandler.handle(error as Error, { content });
+        console.error('Error generating memo:', error);
+        throw error;
     }
 }; 

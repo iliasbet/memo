@@ -1,5 +1,5 @@
 export const AI_MODELS = {
-    GPT: 'gpt-4-turbo-preview',
+    GPT: 'gpt-4o-mini',
     CLAUDE: 'claude-3-haiku-20240307',
 } as const;
 

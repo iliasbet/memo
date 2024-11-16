@@ -4,19 +4,27 @@ export enum SectionType {
     Objectif = 'objectif',
     Accroche = 'accroche',
     Idee = 'idee',
-    Argument = 'argument',
-    Exemple = 'exemple',
-    Titre = 'titre',
+    Concept = 'concept',
+    Histoire = 'histoire',
+    Technique = 'technique',
+    Atelier = 'atelier',
     Resume = 'resume',
     Acquis = 'acquis',
     Ouverture = 'ouverture',
 }
 
 // Structure d'une section de mémo
+export interface Duration {
+    value: number;
+    unit: 'min' | 'h' | 'j';
+}
+
 export interface MemoSection {
     readonly type: SectionType;
+    readonly titre?: string;
     readonly contenu: string;
     readonly couleur: string;
+    readonly duree?: Duration;
 }
 
 // Structure complète d'un mémo
@@ -37,6 +45,8 @@ export interface MemoSectionProps {
     isActive: boolean;
     isLoading?: boolean;
     direction?: 'left' | 'right';
+    title?: string;
+    duration?: Duration | number;
 }
 
 // Structure pour grouper les idées
@@ -52,4 +62,23 @@ export interface MemoContext {
     ideaGroups: IdeaGroup[];
     currentSections: MemoSection[];
     currentPartIndex: number;
+}
+
+// Ajouter après les types existants
+
+export interface Collection {
+    id: string;
+    name: string;
+    description?: string;
+    createdAt: string;
+    updatedAt: string;
+    memos: Memo[];
+    color?: string;
+}
+
+export interface CollectionFolder {
+    id: string;
+    name: string;
+    collections: Collection[];
+    createdAt: string;
 }

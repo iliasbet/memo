@@ -5,9 +5,10 @@ export const MEMO_COLORS = {
     objectif: '#067934',
     accroche: '#8b0909',
     idee: '#1A1A1A',
-    argument: '#08489d',
-    exemple: '#9f770d',
-    titre: '#545454',
+    concept: '#08489d',
+    histoire: '#9f770d',
+    technique: '#6b4c9a',
+    atelier: '#d95525',
     resume: '#6A0DAD',
     acquis: '#067934',
     ouverture: '#FF69B4'
