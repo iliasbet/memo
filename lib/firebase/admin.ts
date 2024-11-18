@@ -18,9 +18,9 @@ function assertEnvVar(value: string | undefined, name: string): string {
 
 // Récupération et validation des variables d'environnement
 const requiredEnvVars: RequiredEnvVars = {
-    projectId: assertEnvVar(process.env.FIREBASE_ADMIN_PROJECT_ID, 'FIREBASE_ADMIN_PROJECT_ID'),
-    clientEmail: assertEnvVar(process.env.FIREBASE_ADMIN_CLIENT_EMAIL, 'FIREBASE_ADMIN_CLIENT_EMAIL'),
-    privateKey: assertEnvVar(process.env.FIREBASE_ADMIN_PRIVATE_KEY, 'FIREBASE_ADMIN_PRIVATE_KEY'),
+    projectId: assertEnvVar(process.env.FIREBASE_ADMIN_PROJECT_ID, 'FIREBASE_PROJECT_ID'),
+    clientEmail: assertEnvVar(process.env.FIREBASE_ADMIN_CLIENT_EMAIL, 'FIREBASE_CLIENT_EMAIL'),
+    privateKey: assertEnvVar(process.env.FIREBASE_ADMIN_PRIVATE_KEY, 'FIREBASE_PRIVATE_KEY'),
 };
 
 // Initialisation de Firebase Admin
