@@ -3,15 +3,13 @@
 // 1. React et Next.js
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
-
-// 2. Composants externes
-import ReactConfetti from 'react-confetti';
+import { initClarity } from '@/lib/clarity';
 
 // 3. Composants internes
 import { MemoList } from '@/components/ui/MemoList';
 import { Input } from "@/components/ui/Input";
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay';
-import { CommandMenu } from '@/components/ui/CommandMenu';
+import { FeedbackCard } from '@/components/ui/FeedbackCard';
 
 // 4. Types et constantes
 import type { Memo } from '@/types';
@@ -26,7 +24,6 @@ const useMemoState = () => {
     const [currentMemo, setCurrentMemo] = useState<Memo | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [showConfetti, setShowConfetti] = useState(false);
 
     return {
         content,
@@ -37,8 +34,6 @@ const useMemoState = () => {
         setIsLoading,
         error,
         setError,
-        showConfetti,
-        setShowConfetti
     };
 };
 
@@ -52,41 +47,44 @@ export default function PageAccueil() {
         setIsLoading,
         error,
         setError,
-        showConfetti,
-        setShowConfetti
     } = useMemoState();
 
-    const [showCommandMenu, setShowCommandMenu] = useState(false);
-    const [inputRect, setInputRect] = useState<DOMRect | null>(null);
-    const inputRef = useRef<HTMLTextAreaElement>(null);
-
-    const handleKeyDown = useCallback((e: KeyboardEvent) => {
-        if (e.key === '/' && !showCommandMenu && document.activeElement === inputRef.current) {
-            e.preventDefault();
-            setInputRect(inputRef.current!.getBoundingClientRect());
-            setShowCommandMenu(true);
-        } else if (e.key === 'Escape' && showCommandMenu) {
-            setShowCommandMenu(false);
+    const [windowDimensions, setWindowDimensions] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return {
+                width: window.innerWidth,
+                height: window.innerHeight
+            };
         }
-    }, [showCommandMenu]);
+        return {
+            width: 1200,
+            height: 800
+        };
+    });
 
     useEffect(() => {
-        document.addEventListener('keydown', handleKeyDown);
-        return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [handleKeyDown]);
+        const updateDimensions = () => {
+            setWindowDimensions({
+                width: window.innerWidth,
+                height: window.innerHeight
+            });
+        };
 
-    const handleClickOutside = useCallback((e: MouseEvent) => {
-        if (showCommandMenu &&
-            inputRef.current &&
-            !inputRef.current.contains(e.target as Node)) {
-            setShowCommandMenu(false);
-        }
-    }, [showCommandMenu]);
+        // Mettre à jour immédiatement au montage
+        updateDimensions();
+
+        window.addEventListener('resize', updateDimensions);
+        window.addEventListener('orientationchange', updateDimensions);
+
+        return () => {
+            window.removeEventListener('resize', updateDimensions);
+            window.removeEventListener('orientationchange', updateDimensions);
+        };
+    }, []);
 
     useEffect(() => {
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [handleClickOutside]);
+        initClarity();
+    }, []);
 
     const handleSubmit = useCallback(async (e?: React.FormEvent) => {
         e?.preventDefault();
@@ -112,7 +110,6 @@ export default function PageAccueil() {
 
             const data = await response.json();
             setCurrentMemo(data.memo);
-            setShowConfetti(true);
         } catch (error) {
             setError(error instanceof MemoError ? error.message : 'Une erreur est survenue');
         } finally {
@@ -120,25 +117,22 @@ export default function PageAccueil() {
         }
     }, [content, isLoading]);
 
+    const handleFeedbackSubmit = async (feedback: string) => {
+        const response = await fetch('/api/feedback', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ feedback }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Erreur lors de l\'envoi du feedback');
+        }
+    };
+
     return (
         <div className="flex flex-col h-screen bg-[#121212] text-white overflow-hidden">
-            {showConfetti && (
-                <ReactConfetti
-                    width={window.innerWidth}
-                    height={window.innerHeight}
-                    numberOfPieces={500}
-                    recycle={false}
-                    gravity={0.8}
-                    initialVelocityX={{ min: -30, max: 30 }}
-                    initialVelocityY={{ min: -80, max: -20 }}
-                    colors={[
-                        '#FF0000', '#00FF00', '#0000FF', '#FFFF00',
-                        '#FF00FF', '#00FFFF', '#FF8C00', '#FF1493',
-                        '#7FFF00', '#FF69B4',
-                    ]}
-                    onConfettiComplete={() => setShowConfetti(false)}
-                />
-            )}
             <div className="min-h-screen flex flex-col">
                 <header className="pt-4">
                     <Image
@@ -180,23 +174,8 @@ export default function PageAccueil() {
                             placeholder="Posez votre question..."
                             isLoading={isLoading}
                             currentMemo={currentMemo}
-                            ref={inputRef}
                         />
                     </div>
-
-                    {showCommandMenu && (
-                        <CommandMenu
-                            onEdit={() => {
-                                // Handle edit
-                                setShowCommandMenu(false);
-                            }}
-                            onAddToCollection={() => {
-                                // Handle add to collection
-                                setShowCommandMenu(false);
-                            }}
-                            inputRect={inputRect}
-                        />
-                    )}
                 </main>
             </div>
         </div>

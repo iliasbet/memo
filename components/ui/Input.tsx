@@ -1,10 +1,9 @@
 // memo/components/ui/Input.tsx
 "use client";
 
-import React, { memo, FormEvent, useState, useRef, useEffect, forwardRef } from "react";
+import React, { memo, FormEvent, useState, useRef, useEffect, forwardRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { CommandMenu } from "./CommandMenu";
 import { Check, Search, Send } from 'lucide-react';
 import type { Memo } from '@/types';
 
@@ -31,10 +30,8 @@ const Input = forwardRef<HTMLTextAreaElement, InputProps>(({
   const [isError, setIsError] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const [showCommandMenu, setShowCommandMenu] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
-  const [inputRect, setInputRect] = useState<DOMRect | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLFormElement>(null);
@@ -45,24 +42,6 @@ const Input = forwardRef<HTMLTextAreaElement, InputProps>(({
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
   }, [value]);
-
-  // Mettre à jour la position du menu quand il s'affiche
-  useEffect(() => {
-    if (showCommandMenu && containerRef.current) {
-      setInputRect(containerRef.current.getBoundingClientRect());
-    }
-  }, [showCommandMenu]);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setShowCommandMenu(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,55 +73,22 @@ const Input = forwardRef<HTMLTextAreaElement, InputProps>(({
         e.preventDefault();
         handleSubmit(e);
       }
-    } else if (e.key === 'Escape' && showCommandMenu) {
-      setShowCommandMenu(false);
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newValue = e.target.value;
-
-    // Afficher le menu si on tape '/' et qu'il n'y a rien avant
-    if (newValue === '/') {
-      setShowCommandMenu(true);
-      setInputRect(textareaRef.current?.getBoundingClientRect() || null);
-    }
-    // Cacher le menu si on continue d'écrire après le '/' ou si on supprime le '/'
-    else if (!newValue.startsWith('/') || newValue.length > 1) {
-      setShowCommandMenu(false);
-    }
-
     onChange(e);
   };
 
-  const handleEdit = () => {
-    if (!currentMemo) {
-      triggerShake();
-      setShowCommandMenu(false);
-      return;
-    }
-    console.log('Édition du mémo');
-    setShowCommandMenu(false);
-  };
-
-  const handleAddToCollection = async () => {
-    if (!currentMemo) {
-      triggerShake();
-      setShowCommandMenu(false);
-      return;
-    }
-
-    setShowCommandMenu(false);
+  const handleSuccess = useCallback(() => {
     setShowSuccessAnimation(true);
     setIsSuccess(true);
-
-    console.log('Ajout aux collections');
 
     setTimeout(() => {
       setIsSuccess(false);
       setShowSuccessAnimation(false);
     }, 2000);
-  };
+  }, []);
 
   // Animation variants pour l'input
   const inputVariants = {
@@ -195,7 +141,7 @@ const Input = forwardRef<HTMLTextAreaElement, InputProps>(({
 
   // Synchroniser les refs
   useEffect(() => {
-    if (ref && 'current' in ref && textareaRef.current) {
+    if (ref && typeof ref === 'object') {
       ref.current = textareaRef.current;
     }
   }, [ref]);
@@ -248,12 +194,17 @@ const Input = forwardRef<HTMLTextAreaElement, InputProps>(({
         <motion.button
           type="submit"
           disabled={isLoading}
-          variants={buttonVariants}
+          initial="idle"
           animate={
-            isLoading ? "loading" :
-              isSuccess ? "success" :
-                isHovered ? "hover" : "idle"
+            isLoading
+              ? "loading"
+              : isSuccess
+                ? "success"
+                : isHovered
+                  ? "hover"
+                  : "idle"
           }
+          variants={buttonVariants}
           onHoverStart={() => setIsHovered(true)}
           onHoverEnd={() => setIsHovered(false)}
           className={cn(
@@ -303,15 +254,6 @@ const Input = forwardRef<HTMLTextAreaElement, InputProps>(({
           </AnimatePresence>
         </motion.button>
       </motion.div>
-      <AnimatePresence>
-        {showCommandMenu && (
-          <CommandMenu
-            onEdit={handleEdit}
-            onAddToCollection={handleAddToCollection}
-            inputRect={inputRect}
-          />
-        )}
-      </AnimatePresence>
     </form>
   );
 });

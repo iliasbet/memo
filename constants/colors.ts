@@ -11,7 +11,8 @@ export const MEMO_COLORS = {
     atelier: '#d95525',
     resume: '#6A0DAD',
     acquis: '#067934',
-    ouverture: '#FF69B4'
+    ouverture: '#FF69B4',
+    feedback: '#2A2A2A'
 } as const;
 
 export type MemoColorKey = keyof typeof MEMO_COLORS;

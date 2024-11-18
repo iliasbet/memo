@@ -11,6 +11,7 @@ export enum SectionType {
     Resume = 'resume',
     Acquis = 'acquis',
     Ouverture = 'ouverture',
+    Feedback = 'feedback'
 }
 
 // Structure d'une section de mémo
@@ -44,7 +45,7 @@ export interface MemoSectionProps {
     color: string;
     isActive: boolean;
     isLoading?: boolean;
-    direction?: 'left' | 'right';
+    direction?: number;
     title?: string;
     duration?: Duration | number;
 }
@@ -81,4 +82,17 @@ export interface CollectionFolder {
     name: string;
     collections: Collection[];
     createdAt: string;
+}
+
+export interface Feedback {
+    id: string;
+    content: string;
+    userId?: string;
+    createdAt: Date;
+    userAgent?: string;
+}
+
+export interface ExtendedMemoSectionProps extends MemoSectionProps {
+    isLastSection?: boolean;
+    direction?: number;
 }

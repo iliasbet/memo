@@ -334,74 +334,24 @@ export const acquisPrompt = (context: MemoContext) =>
     `${systemBasePrompt}
 
 Rôle: Évaluateur pédagogique
-Tâche: Reformuler l'objectif suivant en acquis
+Tâche: Transformer l'objectif en acquis en ajoutant simplement "Vous" au début et en conjuguant le verbe au présent
 
 <contexte>
 Objectif initial: ${context.objective}
 </contexte>
 
 <instructions>
-- Commencer par "Vous"
-- Utiliser le présent simple
-- Garder la même compétence ciblée
-- Maximum 20 mots
-- Formulation positive et valorisante
+- Ajouter "Vous" au début
+- Conjuguer le verbe au présent
+- Garder exactement la même formulation pour le reste
 </instructions>
 
 <exemples>
-BON EXEMPLE:
-Objectif: "Maîtriser les techniques avancées de négociation commerciale"
-Acquis: "Vous maîtrisez les techniques avancées de négociation commerciale"
-→ Commence par "Vous", même compétence, formulation positive
+Objectif: "Maîtriser une technique de feedback constructif"
+Acquis: "Vous maîtrisez une technique de feedback constructif"
 
-BON EXEMPLE:
-Objectif: "Développer une stratégie de growth hacking efficace"
-Acquis: "Vous développez des stratégies de growth hacking efficaces"
-→ Verbe au présent simple, compétence préservée, valorisant
-
-MAUVAIS EXEMPLE:
-Objectif: "Apprendre à gérer son temps"
-Acquis: "Vous avez appris quelques techniques basiques de gestion du temps"
-→ Passé composé au lieu du présent, minimise l'acquis
-</exemples>
-
-${STANDARD_RESPONSE_FORMAT.BASIC}`;
-
-// Ouverture
-export const ouverturePrompt = (context: MemoContext) =>
-    `${systemBasePrompt}
-
-Rôle: Guide pédagogique
-Tâche: Proposer une perspective d'évolution
-
-<contexte>
-Objectif atteint: ${context.objective}
-Acquis validé: ${context.currentSections.find(s => s.type === 'acquis')?.contenu}
-</contexte>
-
-<instructions>
-- Maximum 20 mots
-- Commencer par un verbe d'action
-- Proposer une évolution concrète et réalisable
-- Rester dans le même domaine de compétence
-- Élever le niveau de maîtrise
-</instructions>
-
-<exemples>
-BON EXEMPLE:
-Objectif atteint: "Maîtriser les bases de la négociation commerciale"
-Ouverture: "Appliquez vos techniques de négociation à des contrats internationaux pour élargir votre impact"
-→ Verbe d'action, progression claire, même domaine
-
-MAUVAIS EXEMPLE:
-Objectif atteint: "Maîtriser les bases de la négociation commerciale"
-Ouverture: "Vous pourriez peut-être essayer d'autres choses comme le marketing ou la finance"
-→ Pas de verbe d'action, hors sujet, trop vague
-
-BON EXEMPLE:
-Objectif atteint: "Développer sa productivité personnelle"
-Ouverture: "Transmettez vos méthodes de productivité en devenant mentor pour votre équipe"
-→ Evolution logique, élévation du niveau, impact élargi
+Objectif: "Utiliser la méthode Pomodoro pour mieux gérer son temps"
+Acquis: "Vous utilisez la méthode Pomodoro pour mieux gérer son temps"
 </exemples>
 
 ${STANDARD_RESPONSE_FORMAT.BASIC}`;
@@ -422,30 +372,26 @@ Idée à appliquer: ${context.currentSections[context.currentSections.length - 1
 - Maximum 300 caractères pour le contenu
 - Structure en 3 temps : situation > approche > impact
 - Formulation directe avec verbes d'action
-- Durée d'application en minutes (5-30)
 </instructions>
 
 <exemples>
 BON EXEMPLE:
 TITRE: Règle des trois
-DURÉE: 15 minutes
 CONTENU: Face à une décision complexe (situation), identifiez seulement trois options possibles (approche). Cette contrainte force votre cerveau à prioriser et simplifie drastiquement votre choix final (impact).
-→ Titre concis, structure claire, durée réaliste
+→ Titre concis, structure claire
 
 MAUVAIS EXEMPLE:
 TITRE: Processus décisionnel optimisé
-DURÉE: 2 minutes
 CONTENU: Utilisez cette approche révolutionnaire pour transformer votre vie.
-→ Titre trop long, structure manquante, contenu vague, durée irréaliste
+→ Titre trop long, structure manquante, contenu vague
 
 BON EXEMPLE:
 TITRE: 5-4-3-2-1
-DURÉE: 5 minutes
 CONTENU: Quand vous procrastinez (situation), comptez à rebours de 5 à 1 puis agissez immédiatement (approche). Ce décompte court-circuite la paralysie par l'analyse et déclenche l'action (impact).
 → Titre mémorisable, mécanique simple, impact clair
 </exemples>
 
-${STANDARD_RESPONSE_FORMAT.WITH_DURATION}`;
+${STANDARD_RESPONSE_FORMAT.WITH_TITLE}`;
 
 // Atelier
 export const atelierPrompt = (context: MemoContext) =>

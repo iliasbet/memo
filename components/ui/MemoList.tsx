@@ -86,29 +86,17 @@ export const MemoList: React.FC<MemoListProps> = memo(({ memos, isLoading, curre
                         {isLoading ? (
                             <LoadingCard />
                         ) : currentMemo && sections[currentIndex] ? (
-                            <motion.div
+                            <MemoSection
                                 key={currentIndex}
-                                custom={direction}
-                                variants={slideVariants}
-                                initial="enter"
-                                animate="center"
-                                exit="exit"
-                                transition={{
-                                    x: { type: "spring", stiffness: 300, damping: 30 },
-                                    opacity: { duration: 0.2 },
-                                }}
-                                className={`absolute inset-0 ${isRewinding ? 'transition-all duration-200' : ''}`}
-                            >
-                                <MemoSection
-                                    type={sections[currentIndex].type}
-                                    content={sections[currentIndex].contenu}
-                                    color={sections[currentIndex].couleur}
-                                    isActive={true}
-                                    isLoading={false}
-                                    title={sections[currentIndex].titre}
-                                    duration={sections[currentIndex].duree}
-                                />
-                            </motion.div>
+                                type={sections[currentIndex].type}
+                                content={sections[currentIndex].contenu}
+                                color={sections[currentIndex].couleur}
+                                title={sections[currentIndex].titre}
+                                duration={sections[currentIndex].duree}
+                                isActive={true}
+                                isLastSection={currentIndex === sections.length - 1}
+                                direction={direction}
+                            />
                         ) : (
                             <DefaultCard />
                         )}
