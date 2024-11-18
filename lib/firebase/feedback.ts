@@ -1,11 +1,13 @@
 import { db } from '@/lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 
-export async function saveFeedback(content: string, userId?: string) {
+export async function saveFeedback(content: string, memoRequest?: string, userId?: string) {
     try {
         const feedbackData = {
             content,
+            memoRequest,
             timestamp: new Date().toISOString(),
+            userId
         };
 
         const feedbacksRef = collection(db, 'feedbacks');

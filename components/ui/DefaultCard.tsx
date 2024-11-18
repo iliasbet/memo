@@ -30,8 +30,6 @@ export const DefaultCard = () => {
     return (
         <div className="relative w-full h-full" role="status">
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#1A1A1A] to-[#222222] overflow-hidden">
-                <div className="absolute inset-0 opacity-[0.15] noise-bg" />
-
                 <div className="absolute inset-0">
                     <div className="absolute -top-[20%] -left-[20%] w-[600px] h-[600px] rounded-full bg-[#067934]/10 blur-3xl animate-orb-float-1" />
                     <div className="absolute -top-[10%] -right-[30%] w-[800px] h-[800px] rounded-full bg-[#8b0909]/10 blur-3xl animate-orb-float-2" />

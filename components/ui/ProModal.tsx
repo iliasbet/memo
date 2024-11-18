@@ -35,7 +35,6 @@ export const ProModal = ({ isOpen, onCloseAction }: ProModalProps) => {
                                 <div className="relative overflow-hidden rounded-2xl bg-[#1A1A1A] shadow-xl">
                                     <div className="relative h-[180px]">
                                         <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-600 overflow-hidden">
-                                            <div className="absolute inset-0 opacity-[0.15] noise-bg" />
                                             <div className="relative h-full flex items-center justify-center">
                                                 <Sparkles className="w-12 h-12 text-white" />
                                             </div>

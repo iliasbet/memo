@@ -6,9 +6,10 @@ import { useAuthContext } from '@/contexts/AuthContext';
 
 interface FeedbackCardProps {
     onSubmit: (feedback: string) => Promise<void>;
+    memoRequest?: string;
 }
 
-export const FeedbackCard: React.FC<FeedbackCardProps> = ({ onSubmit }) => {
+export const FeedbackCard: React.FC<FeedbackCardProps> = ({ onSubmit, memoRequest }) => {
     const [feedback, setFeedback] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
@@ -24,9 +25,20 @@ export const FeedbackCard: React.FC<FeedbackCardProps> = ({ onSubmit }) => {
         setIsError(false);
 
         try {
-            await onSubmit(feedback.trim()).catch((error) => {
-                throw new Error(error.message || 'Erreur lors de l\'envoi du feedback');
+            const response = await fetch('/api/feedback', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    feedback: feedback.trim(),
+                    memoRequest
+                }),
             });
+
+            if (!response.ok) {
+                throw new Error('Erreur lors de l\'envoi du feedback');
+            }
 
             setIsSuccess(true);
             setFeedback('');

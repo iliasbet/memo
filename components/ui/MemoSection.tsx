@@ -98,17 +98,22 @@ export const MemoSection: React.FC<ExtendedMemoSectionProps> = memo(({ type, con
 
                     {isLastSection && (
                         <div className="absolute bottom-0 left-0 right-0 bg-black/20 backdrop-blur-sm p-6 rounded-b-2xl border-t border-white/10">
-                            <FeedbackCard onSubmit={async (feedback) => {
-                                const response = await fetch('/api/feedback', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ feedback }),
-                                });
+                            <FeedbackCard
+                                onSubmit={async (feedback) => {
+                                    const response = await fetch('/api/feedback', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            feedback,
+                                            memoRequest: content
+                                        }),
+                                    });
 
-                                if (!response.ok) {
-                                    throw new Error('Erreur lors de l\'envoi du feedback');
-                                }
-                            }} />
+                                    if (!response.ok) {
+                                        throw new Error('Erreur lors de l\'envoi du feedback');
+                                    }
+                                }}
+                            />
                         </div>
                     )}
                 </div>

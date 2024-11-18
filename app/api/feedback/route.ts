@@ -6,7 +6,7 @@ import { MemoError, ErrorCode } from '@/types/errors';
 
 export async function POST(request: Request) {
     try {
-        const { feedback, sessionId } = await request.json();
+        const { feedback, sessionId, memoRequest } = await request.json();
 
         if (!feedback || typeof feedback !== 'string') {
             Logger.log(LogLevel.WARN, 'Feedback invalide reçu', {
@@ -25,7 +25,6 @@ export async function POST(request: Request) {
                 const decodedToken = await adminAuth.verifySessionCookie(sessionId, true);
                 userId = decodedToken.uid;
             } catch (error) {
-                // Log l'erreur mais continue sans userId
                 Logger.log(LogLevel.WARN, 'Session invalide', {
                     error,
                     timestamp: Date.now()
@@ -33,7 +32,7 @@ export async function POST(request: Request) {
             }
         }
 
-        const feedbackId = await saveFeedback(feedback, userId);
+        const feedbackId = await saveFeedback(feedback, memoRequest, userId);
 
         Logger.log(LogLevel.INFO, 'Feedback enregistré avec succès', {
             feedbackId,
