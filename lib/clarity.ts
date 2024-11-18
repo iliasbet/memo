@@ -1,5 +1,10 @@
 export function initClarity() {
-    if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_CLARITY_ID) {
+    if (
+        typeof window !== 'undefined' &&
+        process.env.NEXT_PUBLIC_CLARITY_ID &&
+        window.location.hostname !== 'localhost' &&
+        window.location.hostname !== '127.0.0.1'
+    ) {
         const clarity = window.clarity || function (...args: any[]) {
             (window.clarity.q = window.clarity.q || []).push(args);
         };

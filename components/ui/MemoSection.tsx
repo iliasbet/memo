@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { MemoSectionProps, Duration } from '@/types';
+import { MemoSectionProps, Duration, SectionType } from '@/types';
 import { LoadingCard } from './LoadingCard';
 import { FeedbackCard } from './FeedbackCard';
 import { motion } from 'framer-motion';
@@ -71,7 +71,10 @@ export const MemoSection: React.FC<ExtendedMemoSectionProps> = memo(({ type, con
                     </h3>
 
                     <div className="relative z-10 flex flex-col items-center justify-center max-w-2xl my-auto">
-                        {title ? (
+                        {(type === SectionType.Atelier ||
+                            type === SectionType.Histoire ||
+                            type === SectionType.Technique ||
+                            type === SectionType.Concept) && title ? (
                             <>
                                 <h4 className="text-5xl font-medium mb-8 tracking-wide">
                                     {title}
@@ -87,7 +90,7 @@ export const MemoSection: React.FC<ExtendedMemoSectionProps> = memo(({ type, con
                         )}
                     </div>
 
-                    {duration && (
+                    {type === SectionType.Atelier && duration && (
                         <div className="absolute bottom-10 left-0 right-0 text-sm opacity-40">
                             Durée : {formatDuration(duration)}
                         </div>
