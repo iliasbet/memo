@@ -9,7 +9,7 @@ export async function POST(request: Request) {
 
         // Vérification des champs obligatoires
         if (!feedback || typeof feedback !== 'string') {
-            Logger.log(LogLevel.WARN, 'Feedback invalide reçu', {
+            Logger.log(LogLevel.WARN, 'Feedback invalide  reçu', {
                 timestamp: Date.now(),
                 feedback,
             });
