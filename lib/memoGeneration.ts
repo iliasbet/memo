@@ -5,13 +5,11 @@ import { MEMO_COLORS } from '@/constants/colors';
 import {
     objectifPrompt,
     accrochePrompt,
-    ideePrompt,
     conceptPrompt,
     histoirePrompt,
     techniquePrompt,
     atelierPrompt,
-    resumePrompt,
-    acquisPrompt
+    sujetPrompt
 } from '@/lib/prompts';
 import { ErrorHandler } from '@/lib/errorHandling';
 import { AI_MODELS, MODEL_CONFIG, DEFAULT_MODEL } from '@/constants/ai';
@@ -68,7 +66,12 @@ const RETRY_DELAY = 1000; // 1 seconde
 
 export const generateCompletion = async (
     messages: OpenAIMessage[],
-    modelType = DEFAULT_MODEL
+    modelType: "GPT" | "CLAUDE" | undefined = DEFAULT_MODEL,
+    options?: {
+        maxRetries?: number;
+        baseDelay?: number;
+        context?: { type: string; content: string; }
+    }
 ) => {
     const config = MODEL_CONFIG[modelType];
 
@@ -306,14 +309,21 @@ export const generateMemo = async (
     const sections: MemoSection[] = [];
     const context: MemoContext = {
         topic: content,
-        objective: '',
-        ideaGroups: [],
-        currentSections: sections,
-        currentPartIndex: 0
+        objective: ''
     };
 
     try {
-        // 1. Générer Objectif et Accroche
+        // 1. Extraire le sujet (sans l'ajouter aux sections)
+        const sujetResponse = await generateCompletion(
+            [
+                { role: 'system', content: sujetPrompt(context) },
+                { role: 'user', content }
+            ]
+        );
+        const parsedSujet = parseFormattedResponse(sujetResponse, SectionType.Objectif);
+        context.subject = parsedSujet.contenu;
+
+        // 2. Générer Objectif et Accroche
         const [objectifSection, accrocheSection] = await Promise.all([
             generateSection(content, objectifPrompt, SectionType.Objectif, context),
             generateSection(content, accrochePrompt, SectionType.Accroche, context)
@@ -324,35 +334,20 @@ export const generateMemo = async (
         onProgress?.(accrocheSection);
         context.objective = objectifSection.contenu;
 
-        // 2. Générer l'idée profonde unique
-        const ideeSection = await generateSection(content, ideePrompt, SectionType.Idee, context);
-        sections.push(ideeSection);
-        onProgress?.(ideeSection);
-
-        // 3. Générer les sections qui développent l'idée
-        const [conceptSection, histoireSection, techniqueSection, atelierSection] = await Promise.all([
-            generateSection(content, conceptPrompt, SectionType.Concept, context),
+        // Générer les sections indépendamment
+        const [histoireSection, conceptSection, techniqueSection, atelierSection] = await Promise.all([
             generateSection(content, histoirePrompt, SectionType.Histoire, context),
+            generateSection(content, conceptPrompt, SectionType.Concept, context),
             generateSection(content, techniquePrompt, SectionType.Technique, context),
             generateSection(content, atelierPrompt, SectionType.Atelier, context)
         ]);
-        sections.push(conceptSection, histoireSection, techniqueSection, atelierSection);
-        onProgress?.(conceptSection);
+        sections.push(histoireSection, conceptSection, techniqueSection, atelierSection);
         onProgress?.(histoireSection);
+        onProgress?.(conceptSection);
         onProgress?.(techniqueSection);
         onProgress?.(atelierSection);
 
-        // 4. Générer la conclusion
-        const [resumeSection, acquisSection] = await Promise.all([
-            generateSection(content, resumePrompt, SectionType.Resume, context),
-            generateSection(content, acquisPrompt, SectionType.Acquis, context)
-        ]);
-
-        sections.push(resumeSection, acquisSection);
-        onProgress?.(resumeSection);
-        onProgress?.(acquisSection);
-
-        // 5. Ajouter la section feedback
+        // Ajouter la section feedback
         const feedbackSection: MemoSection = {
             type: SectionType.Feedback,
             contenu: '',

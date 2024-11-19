@@ -4,14 +4,10 @@
 export const MEMO_COLORS = {
     objectif: '#067934',
     accroche: '#8b0909',
-    idee: '#1A1A1A',
     concept: '#08489d',
     histoire: '#9f770d',
     technique: '#6b4c9a',
     atelier: '#d95525',
-    resume: '#6A0DAD',
-    acquis: '#067934',
-    ouverture: '#FF69B4',
     feedback: '#2A2A2A'
 } as const;
 

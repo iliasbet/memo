@@ -3,14 +3,10 @@
 export enum SectionType {
     Objectif = 'objectif',
     Accroche = 'accroche',
-    Idee = 'idee',
     Concept = 'concept',
     Histoire = 'histoire',
     Technique = 'technique',
     Atelier = 'atelier',
-    Resume = 'resume',
-    Acquis = 'acquis',
-    Ouverture = 'ouverture',
     Feedback = 'feedback'
 }
 
@@ -60,9 +56,7 @@ export interface IdeaGroup {
 export interface MemoContext {
     topic: string;
     objective: string;
-    ideaGroups: IdeaGroup[];
-    currentSections: MemoSection[];
-    currentPartIndex: number;
+    subject?: string;
 }
 
 // Ajouter après les types existants
@@ -95,4 +89,12 @@ export interface Feedback {
 export interface ExtendedMemoSectionProps extends MemoSectionProps {
     isLastSection?: boolean;
     direction?: number;
+}
+
+// Ajouter après MemoContext
+export interface SectionPlan {
+    concept: string;
+    histoire: string;
+    technique: string;
+    atelier: string;
 }
