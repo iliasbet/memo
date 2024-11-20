@@ -303,43 +303,6 @@ export const animateSection = async (
     });
 };
 
-/*
-// Fonction utilitaire pour générer l'image
-export async function generateImage(topic: string, context: MemoContext): Promise<string | undefined> {
-    try {
-        if (!process.env.OPENAI_API_KEY) {
-            throw new Error('OPENAI_API_KEY is not defined');
-        }
-
-        const response = await openai.images.generate({
-            model: "dall-e-3",
-            prompt: coverImagePrompt(context),
-            n: 1,
-            size: "1024x1024",
-            quality: "standard",
-            style: "natural",
-            response_format: "b64_json"
-        });
-
-        const base64Image = response.data[0]?.b64_json;
-        if (!base64Image) {
-            Logger.log(LogLevel.ERROR, 'No image data received', {
-                topic,
-                response: JSON.stringify(response)
-            });
-            throw new Error('No image data received from OpenAI');
-        }
-
-        return `data:image/png;base64,${base64Image}`;
-    } catch (error) {
-        Logger.log(LogLevel.ERROR, 'Error generating image', {
-            error: error instanceof Error ? error.message : 'Unknown error',
-            topic
-        });
-        throw error;
-    }
-}
-*/
 // Génère un mémo complet avec toutes ses sections
 export const generateMemo = async (topic: string): Promise<Memo> => {
     try {
