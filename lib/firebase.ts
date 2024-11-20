@@ -11,9 +11,6 @@ const firebaseConfig = {
     appId: "1:328208650824:web:5203e51a31dd5080f5be7d"
 };
 
-// Log pour diagnostic
-console.log('Firebase Config:', firebaseConfig);
-
 // Vérification des variables d'environnement
 if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId) {
     console.error('Configuration Firebase manquante ou incomplète');

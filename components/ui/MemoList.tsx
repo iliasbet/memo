@@ -62,7 +62,7 @@ export const MemoList: React.FC<MemoListProps> = memo(
             }
         };
 
-        const handleRetryImage = async () => {
+        /*const handleRetryImage = async () => {
             if (!currentMemo?.metadata.topic) return;
 
             setIsRetrying(true);
@@ -96,7 +96,7 @@ export const MemoList: React.FC<MemoListProps> = memo(
             } finally {
                 setIsRetrying(false);
             }
-        };
+        };*/
 
         const handleNext = useCallback(() => {
             if (isLastSection) {
@@ -156,11 +156,11 @@ export const MemoList: React.FC<MemoListProps> = memo(
                                 {currentIndex === 0 ? (
                                     <CoverCard
                                         key="cover"
-                                        imageUrl={currentMemo?.metadata.coverImage}
+                                        //imageUrl={currentMemo?.metadata.coverImage}
                                         topic={currentMemo?.metadata.topic || ''}
                                         subject={currentMemo?.metadata.subject}
                                         isLoading={isLoading || isRetrying}
-                                        onRetry={handleRetryImage}
+                                    //onRetry={handleRetryImage}
                                     />
                                 ) : (
                                     sections[currentIndex - 1] && (

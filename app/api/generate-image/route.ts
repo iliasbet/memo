@@ -1,6 +1,7 @@
+/*
 // app/api/generate-image/route.ts
 import { NextResponse } from 'next/server';
-import { generateImage } from '@/lib/memoGeneration';
+//import { generateImage } from '@/lib/memoGeneration';
 import { Logger, LogLevel } from '@/lib/logger';
 import { MemoContext } from '@/types';
 
@@ -37,4 +38,4 @@ export async function POST(request: Request) {
             { status: 500 }
         );
     }
-}
+}*/

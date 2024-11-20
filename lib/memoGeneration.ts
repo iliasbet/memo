@@ -10,7 +10,7 @@ import {
     techniquePrompt,
     atelierPrompt,
     sujetPrompt,
-    coverImagePrompt
+    // coverImagePrompt
 } from '@/lib/prompts';
 import { ErrorHandler } from '@/lib/errorHandling';
 import { AI_MODELS, MODEL_CONFIG, DEFAULT_MODEL } from '@/constants/ai';
@@ -303,6 +303,7 @@ export const animateSection = async (
     });
 };
 
+/*
 // Fonction utilitaire pour générer l'image
 export async function generateImage(topic: string, context: MemoContext): Promise<string | undefined> {
     try {
@@ -338,7 +339,7 @@ export async function generateImage(topic: string, context: MemoContext): Promis
         throw error;
     }
 }
-
+*/
 // Génère un mémo complet avec toutes ses sections
 export const generateMemo = async (topic: string): Promise<Memo> => {
     try {
@@ -371,11 +372,19 @@ export const generateMemo = async (topic: string): Promise<Memo> => {
         };
 
         // Générer l'image et les sections en parallèle
-        const [coverImage, objectifSection, accrocheSection, conceptSection, histoireSection, techniqueSection, atelierSection] = await Promise.all([
-            generateImage(topic, updatedContext).catch(error => {
-                Logger.log(LogLevel.ERROR, 'Error generating cover image', { error, topic });
-                return undefined;
-            }),
+        // Commentons la génération d'image
+        // const coverImage = await generateImage(topic, updatedContext).catch(error => {
+        //     Logger.log(LogLevel.ERROR, 'Error generating cover image', {
+        //         error: error instanceof Error ? error.message : 'Unknown error',
+        //         errorObject: error,
+        //         topic,
+        //         context: updatedContext
+        //     });
+        //     return undefined;
+        // });
+        const coverImage = undefined; // Forcer undefined pour l'instant
+
+        const [objectifSection, accrocheSection, conceptSection, histoireSection, techniqueSection, atelierSection] = await Promise.all([
             generateSection(topic, objectifPrompt, SectionType.Objectif, updatedContext),
             generateSection(topic, accrochePrompt, SectionType.Accroche, updatedContext),
             generateSection(topic, conceptPrompt, SectionType.Concept, updatedContext),
