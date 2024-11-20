@@ -9,6 +9,7 @@ export const useStreamingMemo = () => {
         setMemo(prev => prev
             ? { ...prev, sections: [...prev.sections, section] }
             : {
+                id: `memo-${Date.now()}`,
                 sections: [section],
                 metadata: {
                     createdAt: new Date().toISOString(),
