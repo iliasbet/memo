@@ -10,7 +10,18 @@ interface ExtendedMemoSectionProps extends Omit<MemoSectionProps, 'duration'> {
     isLastSection?: boolean;
 }
 
-export const MemoSection: React.FC<ExtendedMemoSectionProps> = memo(({ type, content, color, isActive, isLoading = false, title, duration, isLastSection, direction = 0 }) => {
+export const MemoSection: React.FC<ExtendedMemoSectionProps> = memo(({ type, content, color, isActive, isLoading = false, title, duration, isLastSection, direction = 0, topic, idMemo }) => {
+    // console.log('type :', type);
+    // console.log('content :', content);
+    // console.log('color :', color);
+    // console.log('isActive :', isActive);
+    // console.log('isLoading :', isLoading);
+    // console.log('title :', title);
+    // console.log('duration :', duration);
+    // console.log('isLastSection :', isLastSection);
+    // console.log('direction :', direction);
+    // console.log('topic :', topic);
+
     if (!isActive) return null;
     if (isLoading) return <LoadingCard />;
 
@@ -109,7 +120,8 @@ export const MemoSection: React.FC<ExtendedMemoSectionProps> = memo(({ type, con
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({
                                             feedback,
-                                            memoRequest: content
+                                            memoRequest: topic, // Déjà présent
+                                            idMemo, // Ajouter idMemo dans le corps de la requête
                                         }),
                                     });
 
@@ -117,7 +129,10 @@ export const MemoSection: React.FC<ExtendedMemoSectionProps> = memo(({ type, con
                                         throw new Error('Erreur lors de l\'envoi du feedback');
                                     }
                                 }}
+                                memoRequest={topic} // Déjà présent
+                                idMemo={idMemo} // Ajout de la prop idMemo
                             />
+
                         </div>
                     )}
                 </div>

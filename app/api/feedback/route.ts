@@ -5,11 +5,11 @@ import { adminAuth } from '@/lib/firebase/admin';
 
 export async function POST(request: Request) {
     try {
-        const { feedback, sessionId, memoRequest } = await request.json();
+        const { feedback, sessionId, memoRequest, idMemo } = await request.json();
 
         // Vérification des champs obligatoires
         if (!feedback || typeof feedback !== 'string') {
-            Logger.log(LogLevel.WARN, 'Feedback invalide  reçu', {
+            Logger.log(LogLevel.WARN, 'Feedback invalide reçu', {
                 timestamp: Date.now(),
                 feedback,
             });
@@ -22,6 +22,10 @@ export async function POST(request: Request) {
         // Assigner une valeur par défaut si memoRequest est undefined ou invalide
         const validatedMemoRequest =
             memoRequest && typeof memoRequest === 'string' ? memoRequest : 'message default';
+
+        // Vérification de idMemo
+        const validatedIdMemo =
+            idMemo && typeof idMemo === 'string' ? idMemo : 'unknown'; // Valeur par défaut si idMemo est absent ou invalide
 
         // Récupérer l'utilisateur à partir de la session si disponible
         let userId: string | undefined = 'anonyme'; // Valeur par défaut
@@ -38,12 +42,13 @@ export async function POST(request: Request) {
             }
         }
 
-        // Sauvegarder le feedback
-        const feedbackId = await saveFeedback(feedback, validatedMemoRequest, userId);
+        // Sauvegarder le feedback avec idMemo
+        const feedbackId = await saveFeedback(feedback, validatedMemoRequest, userId, validatedIdMemo);
 
         Logger.log(LogLevel.INFO, 'Feedback enregistré avec succès', {
             feedbackId,
             userId,
+            idMemo: validatedIdMemo,
             timestamp: Date.now(),
         });
 

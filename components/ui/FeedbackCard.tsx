@@ -7,9 +7,12 @@ import { useAuthContext } from '@/contexts/AuthContext';
 interface FeedbackCardProps {
     onSubmit: (feedback: string) => Promise<void>;
     memoRequest?: string;
+    idMemo?: string;
 }
 
-export const FeedbackCard: React.FC<FeedbackCardProps> = ({ onSubmit, memoRequest }) => {
+export const FeedbackCard: React.FC<FeedbackCardProps> = ({ onSubmit, memoRequest, idMemo }) => {
+    // console.log('memoRequest reçu dans FeedbackCard :', memoRequest);
+    // console.log('idMemo reçu dans FeedbackCard :', idMemo);
     const [feedback, setFeedback] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
@@ -32,7 +35,8 @@ export const FeedbackCard: React.FC<FeedbackCardProps> = ({ onSubmit, memoReques
                 },
                 body: JSON.stringify({
                     feedback: feedback.trim(),
-                    memoRequest
+                    memoRequest,
+                    idMemo // Ajout de idMemo ici
                 }),
             });
 
@@ -49,6 +53,7 @@ export const FeedbackCard: React.FC<FeedbackCardProps> = ({ onSubmit, memoReques
         } finally {
             setIsLoading(false);
         }
+
     };
 
     return (

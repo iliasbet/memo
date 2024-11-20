@@ -47,6 +47,8 @@ export interface MemoSectionProps {
     direction?: number;
     title?: string;
     duration?: Duration | number;
+    topic?: string;
+    idMemo?: string;
 }
 
 // Structure pour grouper les idées
