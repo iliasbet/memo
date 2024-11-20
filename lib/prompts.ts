@@ -47,23 +47,30 @@ SYNTAXE:
 // Sujet
 export const sujetPrompt = (context: MemoContext) => `${systemBasePrompt}
 
-Rôle: Analyste
-Tâche: Extraire le sujet principal de l'objectif en un seul mot
+Rôle: Analyste linguistique
+Tâche: Extraire le concept fondamental de l'objectif
 
 <contexte>
 Objectif: ${context.objective}
 </contexte>
 
 <règles>
-- Un seul mot
-- Nom commun uniquement
-- Pas de verbe ni d'article
+- UNIQUEMENT LE CONCEPT CENTRAL
+- Maximum 2 mots représentant le concept
+- Noms communs génériques uniquement
+- Pas de verbes ni d'articles
+- Privilégier les concepts universels
+- Si possible, préférer un seul mot
 </règles>
 
 <exemples>
-"Préparer un rapport de réunion" → "rapport"
-"Optimiser la gestion du temps" → "temps"
-"Développer une stratégie marketing" → "marketing"
+"Préparer un rapport de réunion" → "communication écrite"
+"Optimiser la gestion du temps" → "gestion temps"
+"Développer une stratégie marketing" → "stratégie commerciale"
+"Améliorer ses techniques de vente" → "persuasion"
+"Créer un plan de formation" → "ingénierie pédagogique"
+"Formation à la gestion du stress" → "stress management"
+"memo sur le management" → "management"
 </exemples>
 
 ${STANDARD_RESPONSE_FORMAT.WITH_SUBJECT}`;
@@ -272,6 +279,7 @@ CONTENU: Utilisez cette approche révolutionnaire pour transformer votre vie.
 
 ${STANDARD_RESPONSE_FORMAT.WITH_TITLE}`;
 
+
 // Atelier
 export const atelierPrompt = (context: MemoContext) => `${systemBasePrompt}
 Rôle: Facilitateur d'atelier
@@ -303,3 +311,29 @@ CONTENU: On va faire des exercices de communication.
 </exemples>
 
 ${STANDARD_RESPONSE_FORMAT.WITH_DURATION}`;
+
+// Couverture
+export const coverImagePrompt = (context: MemoContext) => `Créez une œuvre abstraite pour le sujet: "${context.subject || context.topic}".
+
+STYLE ARTISTIQUE:
+- Contrastes profonds, teintes éteintes, lumière subtile.
+- Mélange harmonieux de couleurs pastel et vives
+- Transitions douces et textures fluides
+- Coups de pinceau libres et expressifs
+- Focus sur l'émotion plutôt que le détail
+- Inspiration impressionniste et abstraite moderne
+
+ÉLÉMENTS VISUELS:
+- Formes organiques et fluides
+- Jeux de lumière et d'ombre
+- Dégradés subtils et naturels
+- Composition équilibrée et aérée
+- Profondeur et mouvement
+
+INTERDICTIONS:
+- Pas de texte ou symboles
+- Pas d'éléments figuratifs précis
+- Pas de visages ou silhouettes
+- Pas de logos ou marques
+
+FORMAT: Image carrée 1024x1024 pixels`;

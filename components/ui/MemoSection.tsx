@@ -3,6 +3,7 @@ import { MemoSectionProps, Duration, SectionType } from '@/types';
 import { LoadingCard } from './LoadingCard';
 import { FeedbackCard } from './FeedbackCard';
 import { motion } from 'framer-motion';
+import { MEMO_TEXT_COLORS } from '@/constants/colors';
 
 interface ExtendedMemoSectionProps extends Omit<MemoSectionProps, 'duration'> {
     duration?: Duration;
@@ -62,11 +63,14 @@ export const MemoSection: React.FC<ExtendedMemoSectionProps> = memo(({ type, con
             <div className="relative w-full h-full">
                 <div
                     className="relative w-full h-full rounded-2xl flex flex-col items-center justify-center px-20 text-center overflow-hidden"
-                    style={{ backgroundColor: color }}
+                    style={{
+                        backgroundColor: color,
+                        color: MEMO_TEXT_COLORS[type as keyof typeof MEMO_TEXT_COLORS]
+                    }}
                 >
                     <div className="absolute inset-0 opacity-[0.15] noise-bg" />
 
-                    <h3 className="absolute top-10 left-0 right-0 font-medium text-memo-title-mobile sm:text-memo-title-tablet md:text-memo-title-desktop uppercase tracking-wider opacity-40 w-full">
+                    <h3 className="absolute top-10 left-0 right-0 font-medium text-memo-title-mobile sm:text-memo-title-tablet md:text-memo-title-desktop uppercase tracking-wider opacity-40 w-full text-white">
                         {type}
                     </h3>
 

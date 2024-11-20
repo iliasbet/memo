@@ -7,7 +7,8 @@ export enum SectionType {
     Histoire = 'histoire',
     Technique = 'technique',
     Atelier = 'atelier',
-    Feedback = 'feedback'
+    Feedback = 'feedback',
+    Sujet = 'sujet'
 }
 
 // Structure d'une section de mémo
@@ -26,11 +27,13 @@ export interface MemoSection {
 
 // Structure complète d'un mémo
 export interface Memo {
-    readonly id?: number;
-    readonly sections: readonly MemoSection[];
-    readonly metadata: {
-        readonly createdAt: string;
-        readonly topic: string;
+    id: string;
+    sections: MemoSection[];
+    metadata: {
+        createdAt: string;
+        topic: string;
+        subject?: string;
+        coverImage?: string;
     };
 }
 

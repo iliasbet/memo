@@ -147,17 +147,6 @@ export default function PageAccueil() {
                 </header>
 
                 <main className="flex flex-col items-center px-4 mt-6">
-                    {error && (
-                        <ErrorDisplay
-                            error={new MemoError(
-                                ErrorCode.API_ERROR,
-                                error.includes('connexion')
-                                    ? "Erreur de connexion. Veuillez réessayer."
-                                    : error
-                            )}
-                        />
-                    )}
-
                     <div className="w-full max-w-3xl">
                         <MemoList
                             memos={currentMemo ? [currentMemo] : []}
@@ -166,7 +155,7 @@ export default function PageAccueil() {
                         />
                     </div>
 
-                    <div className="mt-12 mb-8">
+                    <div className="relative w-full max-w-3xl mt-12 mb-8">
                         <Input
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
@@ -175,6 +164,18 @@ export default function PageAccueil() {
                             isLoading={isLoading}
                             currentMemo={currentMemo}
                         />
+                        {error && (
+                            <div className="mt-4">
+                                <ErrorDisplay
+                                    error={error}
+                                    onRetry={() => {
+                                        setError(null);
+                                        handleSubmit();
+                                    }}
+                                    onClose={() => setError(null)}
+                                />
+                            </div>
+                        )}
                     </div>
                 </main>
             </div>

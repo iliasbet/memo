@@ -9,12 +9,15 @@ import {
     histoirePrompt,
     techniquePrompt,
     atelierPrompt,
-    sujetPrompt
+    sujetPrompt,
+    coverImagePrompt
 } from '@/lib/prompts';
 import { ErrorHandler } from '@/lib/errorHandling';
 import { AI_MODELS, MODEL_CONFIG, DEFAULT_MODEL } from '@/constants/ai';
 import { Logger, LogLevel } from '@/lib/logger';
 import { MemoError, ErrorCode } from '@/types/errors';
+import { encode } from 'base64-arraybuffer';
+import { v4 as uuidv4 } from 'uuid';
 
 // Types et interfaces
 export interface AIResponse {
@@ -300,71 +303,116 @@ export const animateSection = async (
     });
 };
 
-// Génère un mémo complet avec toutes ses sections
-export const generateMemo = async (
-    content: string,
-    onProgress?: (section: MemoSection) => void
-): Promise<Memo> => {
-    console.log('Starting memo generation for:', content);
-    const sections: MemoSection[] = [];
-    const context: MemoContext = {
-        topic: content,
-        objective: ''
-    };
-
+// Fonction utilitaire pour générer l'image
+export async function generateImage(topic: string, context: MemoContext): Promise<string | undefined> {
     try {
-        // 1. Extraire le sujet (sans l'ajouter aux sections)
-        const sujetResponse = await generateCompletion(
-            [
-                { role: 'system', content: sujetPrompt(context) },
-                { role: 'user', content }
-            ]
-        );
-        const parsedSujet = parseFormattedResponse(sujetResponse, SectionType.Objectif);
-        context.subject = parsedSujet.contenu;
+        if (!process.env.OPENAI_API_KEY) {
+            throw new Error('OPENAI_API_KEY is not defined');
+        }
 
-        // 2. Générer Objectif et Accroche
-        const [objectifSection, accrocheSection] = await Promise.all([
-            generateSection(content, objectifPrompt, SectionType.Objectif, context),
-            generateSection(content, accrochePrompt, SectionType.Accroche, context)
-        ]);
+        const response = await openai.images.generate({
+            model: "dall-e-3",
+            prompt: coverImagePrompt(context),
+            n: 1,
+            size: "1024x1024",
+            quality: "standard",
+            style: "natural",
+            response_format: "b64_json"
+        });
 
-        sections.push(objectifSection, accrocheSection);
-        onProgress?.(objectifSection);
-        onProgress?.(accrocheSection);
-        context.objective = objectifSection.contenu;
+        const base64Image = response.data[0]?.b64_json;
+        if (!base64Image) {
+            Logger.log(LogLevel.ERROR, 'No image data received', {
+                topic,
+                response: JSON.stringify(response)
+            });
+            throw new Error('No image data received from OpenAI');
+        }
 
-        // Générer les sections indépendamment
-        const [histoireSection, conceptSection, techniqueSection, atelierSection] = await Promise.all([
-            generateSection(content, histoirePrompt, SectionType.Histoire, context),
-            generateSection(content, conceptPrompt, SectionType.Concept, context),
-            generateSection(content, techniquePrompt, SectionType.Technique, context),
-            generateSection(content, atelierPrompt, SectionType.Atelier, context)
-        ]);
-        sections.push(histoireSection, conceptSection, techniqueSection, atelierSection);
-        onProgress?.(histoireSection);
-        onProgress?.(conceptSection);
-        onProgress?.(techniqueSection);
-        onProgress?.(atelierSection);
+        return `data:image/png;base64,${base64Image}`;
+    } catch (error) {
+        Logger.log(LogLevel.ERROR, 'Error generating image', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            topic
+        });
+        throw error;
+    }
+}
 
-        // Ajouter la section feedback
-        const feedbackSection: MemoSection = {
-            type: SectionType.Feedback,
-            contenu: '',
-            couleur: MEMO_COLORS.feedback
+// Génère un mémo complet avec toutes ses sections
+export const generateMemo = async (topic: string): Promise<Memo> => {
+    try {
+        const memoId = uuidv4();
+        const context: MemoContext = {
+            topic,
+            objective: topic,
         };
-        sections.push(feedbackSection);
-        onProgress?.(feedbackSection);
 
-        return {
+        // Extraire d'abord le sujet raffiné
+        const subjectSection = await generateSection(topic, sujetPrompt, SectionType.Sujet, context);
+        let parsedSubject: string | undefined;
+
+        try {
+            // Parser la réponse JSON du sujet
+            const subjectResponse = JSON.parse(subjectSection.contenu);
+            parsedSubject = subjectResponse.sujet;
+        } catch (error) {
+            Logger.log(LogLevel.WARN, 'Erreur lors du parsing du sujet', {
+                error,
+                content: subjectSection.contenu
+            });
+            parsedSubject = undefined;
+        }
+
+        // Mettre à jour le contexte avec le sujet raffiné parsé
+        const updatedContext: MemoContext = {
+            ...context,
+            subject: parsedSubject // Utiliser le sujet parsé
+        };
+
+        // Générer l'image et les sections en parallèle
+        const [coverImage, objectifSection, accrocheSection, conceptSection, histoireSection, techniqueSection, atelierSection] = await Promise.all([
+            generateImage(topic, updatedContext).catch(error => {
+                Logger.log(LogLevel.ERROR, 'Error generating cover image', { error, topic });
+                return undefined;
+            }),
+            generateSection(topic, objectifPrompt, SectionType.Objectif, updatedContext),
+            generateSection(topic, accrochePrompt, SectionType.Accroche, updatedContext),
+            generateSection(topic, conceptPrompt, SectionType.Concept, updatedContext),
+            generateSection(topic, histoirePrompt, SectionType.Histoire, updatedContext),
+            generateSection(topic, techniquePrompt, SectionType.Technique, updatedContext),
+            generateSection(topic, atelierPrompt, SectionType.Atelier, updatedContext)
+        ]);
+
+        const sections = [
+            objectifSection,
+            accrocheSection,
+            conceptSection,
+            histoireSection,
+            techniqueSection,
+            atelierSection,
+            {
+                type: SectionType.Feedback,
+                contenu: '',
+                couleur: MEMO_COLORS.feedback
+            }
+        ].filter(Boolean);
+
+        // Inclure le sujet raffiné dans la metadata
+        const memo: Memo = {
+            id: memoId,
             sections,
             metadata: {
                 createdAt: new Date().toISOString(),
-                topic: content
+                topic,
+                subject: parsedSubject, // Utiliser le sujet parsé
+                coverImage
             }
         };
+
+        return memo;
     } catch (error) {
-        console.error('Error generating memo:', error);
+        console.error('Erreur lors de la génération du mémo:', error);
         throw error;
     }
 }; 
