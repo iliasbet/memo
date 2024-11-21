@@ -1,10 +1,12 @@
-import mongoose from 'mongoose';
+import { MongoClient } from 'mongodb';
 
 declare global {
-    var mongoose: {
-        conn: typeof mongoose | null;
-        promise: Promise<typeof mongoose> | null;
-    };
+    namespace NodeJS {
+        interface Global {
+            _mongoClientPromise?: Promise<MongoClient>;
+        }
+    }
 }
 
-export { }; 
+// Ajoutez cette ligne pour éviter que TypeScript ne traite ce fichier comme un module :
+export { };

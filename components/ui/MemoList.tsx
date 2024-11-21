@@ -20,6 +20,7 @@ interface MemoListProps {
 
 export const MemoList: React.FC<MemoListProps> = memo(
     ({ memos, isLoading, currentStreamingContent }) => {
+        console.log("myMemo", memos);
         const [currentIndex, setCurrentIndex] = useState(0);
         const [direction, setDirection] = useState(0);
         const [isRewinding, setIsRewinding] = useState(false);

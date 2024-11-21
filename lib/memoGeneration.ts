@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { saveMemoToDatabase } from './saveMemoDb';
 import Anthropic from '@anthropic-ai/sdk';
 import { MemoSection, SectionType, Memo, Duration, MemoContext } from '@/types';
 import { MEMO_COLORS } from '@/constants/colors';
@@ -381,6 +382,9 @@ export const generateMemo = async (topic: string): Promise<Memo> => {
                 coverImage
             }
         };
+
+        const insertedId = await saveMemoToDatabase(memo);
+        console.log(`Mémo enregistré avec l'ID : ${insertedId}`);
 
         return memo;
     } catch (error) {
