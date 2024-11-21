@@ -1,4 +1,6 @@
 import OpenAI from 'openai';
+import { Document, WithId } from 'mongodb';
+import { MongoClient } from 'mongodb';
 import { saveMemoToDatabase } from './saveMemoDb';
 import Anthropic from '@anthropic-ai/sdk';
 import { MemoSection, SectionType, Memo, Duration, MemoContext } from '@/types';
@@ -31,6 +33,14 @@ export interface ParsedResponse {
     titre?: string;
     contenu: string;
     duree?: Duration;
+}
+
+export function convertToMemo(document: WithId<Document>): Memo {
+    return {
+        id: document.id,
+        sections: document.sections,
+        metadata: document.metadata,
+    };
 }
 
 type OpenAIMessage = {
@@ -307,54 +317,59 @@ export const animateSection = async (
 // Génère un mémo complet avec toutes ses sections
 export const generateMemo = async (topic: string): Promise<Memo> => {
     try {
-        const memoId = uuidv4();
+        const uri = process.env.MONGODB_URI || "mongodb+srv://joshua87000:Joshua87@gene.uxnovlm.mongodb.net/Memo?retryWrites=true&w=majority";
+        const client = new MongoClient(uri, { serverSelectionTimeoutMS: 5000 });
+        const db = client.db('Memo'); // Nom de la base de données
+        const collection = db.collection('MemoCreated'); // Nom de la collection
+
+        // Étape 1 : Vérifier si un mémo existe déjà pour cet ID (où id == topic)
+        const existingMemo = await collection.findOne({ id: topic });
+
+        if (existingMemo) {
+            console.log(`Mémo existant trouvé pour l'ID : ${topic}`);
+            return convertToMemo(existingMemo);
+        }
+
+        // Étape 2 : Si aucun mémo existant, générer un nouveau mémo
+        console.log(`Aucun mémo trouvé pour l'ID : ${topic}, génération d'un nouveau mémo...`);
+
+        const memoId = topic; // L'ID sera défini comme le topic fourni
         const context: MemoContext = {
             topic,
             objective: topic,
         };
 
-        // Extraire d'abord le sujet raffiné
+        // Extraire le sujet raffiné
         const subjectSection = await generateSection(topic, sujetPrompt, SectionType.Sujet, context);
         let parsedSubject: string | undefined;
 
         try {
-            // Parser la réponse JSON du sujet
             const subjectResponse = JSON.parse(subjectSection.contenu);
             parsedSubject = subjectResponse.sujet;
         } catch (error) {
             Logger.log(LogLevel.WARN, 'Erreur lors du parsing du sujet', {
                 error,
-                content: subjectSection.contenu
+                content: subjectSection.contenu,
             });
             parsedSubject = undefined;
         }
 
-        // Mettre à jour le contexte avec le sujet raffiné parsé
+        // Mettre à jour le contexte avec le sujet raffiné
         const updatedContext: MemoContext = {
             ...context,
-            subject: parsedSubject // Utiliser le sujet parsé
+            subject: parsedSubject,
         };
 
-        // Générer l'image et les sections en parallèle
-        // Commentons la génération d'image
-        // const coverImage = await generateImage(topic, updatedContext).catch(error => {
-        //     Logger.log(LogLevel.ERROR, 'Error generating cover image', {
-        //         error: error instanceof Error ? error.message : 'Unknown error',
-        //         errorObject: error,
-        //         topic,
-        //         context: updatedContext
-        //     });
-        //     return undefined;
-        // });
-        const coverImage = undefined; // Forcer undefined pour l'instant
+        const coverImage = undefined; // Placeholder pour l'image
 
+        // Générer les sections en parallèle
         const [objectifSection, accrocheSection, conceptSection, histoireSection, techniqueSection, atelierSection] = await Promise.all([
             generateSection(topic, objectifPrompt, SectionType.Objectif, updatedContext),
             generateSection(topic, accrochePrompt, SectionType.Accroche, updatedContext),
             generateSection(topic, conceptPrompt, SectionType.Concept, updatedContext),
             generateSection(topic, histoirePrompt, SectionType.Histoire, updatedContext),
             generateSection(topic, techniquePrompt, SectionType.Technique, updatedContext),
-            generateSection(topic, atelierPrompt, SectionType.Atelier, updatedContext)
+            generateSection(topic, atelierPrompt, SectionType.Atelier, updatedContext),
         ]);
 
         const sections = [
@@ -367,28 +382,29 @@ export const generateMemo = async (topic: string): Promise<Memo> => {
             {
                 type: SectionType.Feedback,
                 contenu: '',
-                couleur: MEMO_COLORS.feedback
-            }
+                couleur: MEMO_COLORS.feedback,
+            },
         ].filter(Boolean);
 
-        // Inclure le sujet raffiné dans la metadata
+        // Création du mémo
         const memo: Memo = {
             id: memoId,
             sections,
             metadata: {
                 createdAt: new Date().toISOString(),
                 topic,
-                subject: parsedSubject, // Utiliser le sujet parsé
-                coverImage
-            }
+                subject: parsedSubject,
+                coverImage,
+            },
         };
 
+        // Sauvegarder le mémo dans la base
         const insertedId = await saveMemoToDatabase(memo);
-        console.log(`Mémo enregistré avec l'ID : ${insertedId}`);
+        console.log(`Nouveau mémo enregistré avec l'ID : ${insertedId}`);
 
         return memo;
     } catch (error) {
         console.error('Erreur lors de la génération du mémo:', error);
         throw error;
     }
-}; 
+};
