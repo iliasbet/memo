@@ -333,7 +333,7 @@ export const generateMemo = async (topic: string): Promise<Memo> => {
         // Étape 2 : Si aucun mémo existant, générer un nouveau mémo
         console.log(`Aucun mémo trouvé pour l'ID : ${topic}, génération d'un nouveau mémo...`);
 
-        const memoId = topic; // L'ID sera défini comme le topic fourni
+        const memoId = uuidv4(); // L'ID sera défini comme le topic fourni
         const context: MemoContext = {
             topic,
             objective: topic,
