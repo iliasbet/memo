@@ -13,14 +13,10 @@ import {
     techniquePrompt,
     atelierPrompt,
     sujetPrompt,
-    // coverImagePrompt
 } from '@/lib/prompts';
 import { ErrorHandler } from '@/lib/errorHandling';
 import { AI_MODELS, MODEL_CONFIG, DEFAULT_MODEL } from '@/constants/ai';
 import { Logger, LogLevel } from '@/lib/logger';
-import { MemoError, ErrorCode } from '@/types/errors';
-import { encode } from 'base64-arraybuffer';
-import { v4 as uuidv4 } from 'uuid';
 
 // Types et interfaces
 export interface AIResponse {
@@ -160,85 +156,23 @@ export const parseDuration = (dureeStr?: string): Duration | undefined => {
 };
 
 export const parseFormattedResponse = (completion: string, type: SectionType): ParsedResponse => {
+    // Si la réponse est vide, retourner un contenu vide
+    if (!completion) {
+        return { contenu: '' };
+    }
+
     try {
-        Logger.log(LogLevel.INFO, `Début du parsing pour la section ${type}`, {
-            completion,
-            timestamp: new Date().toISOString()
-        });
-
-        // Nettoyage et extraction du JSON
-        const cleanedCompletion = completion.trim();
-        let jsonStr = cleanedCompletion;
-
-        // Si le JSON est entouré de backticks ou quotes, on les retire
-        if (cleanedCompletion.match(/^(`{3}|'{3}|"{3})/)) {
-            jsonStr = cleanedCompletion.replace(/^(`{3}|'{3}|"{3})/, '').replace(/(`{3}|'{3}|"{3})$/, '');
-        }
-
-        // Essayer de trouver un objet JSON valide
-        const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-            // Au lieu de throw, on retourne un objet par défaut
-            return {
-                contenu: completion.substring(0, 400), // Limite arbitraire pour éviter les contenus trop longs
-                titre: undefined,
-                duree: undefined
-            };
-        }
-
-        let parsed: unknown;
-        try {
-            parsed = JSON.parse(jsonMatch[0]);
-        } catch (e) {
-            // En cas d'erreur de parsing, on retourne un objet par défaut
-            return {
-                contenu: completion.substring(0, 400),
-                titre: undefined,
-                duree: undefined
-            };
-        }
-
-        // Validation plus souple
-        if (!isValidAIResponse(parsed, type)) {
-            // Au lieu de throw, on essaie de récupérer ce qu'on peut
-            return {
-                contenu: typeof parsed === 'object' && parsed !== null && 'contenu' in parsed
-                    ? String(parsed.contenu).substring(0, 400)
-                    : completion.substring(0, 400),
-                titre: typeof parsed === 'object' && parsed !== null && 'titre' in parsed
-                    ? String(parsed.titre)
-                    : undefined,
-                duree: undefined
-            };
-        }
-
-        // Nettoyage du contenu multi-lignes si nécessaire
-        if (parsed.contenu.split('\n').length > 1) {
-            Logger.log(LogLevel.WARN, 'Contenu multi-lignes détecté, nettoyage...', {
-                original: parsed.contenu
-            });
-            parsed.contenu = parsed.contenu.replace(/\n/g, ' ').trim();
-        }
+        // Essayer de parser toute la réponse comme JSON
+        const parsed = JSON.parse(completion);
 
         return {
-            titre: parsed.titre,
-            contenu: parsed.contenu,
-            duree: parsed.duree ? parseDuration(parsed.duree) : undefined
+            contenu: parsed?.contenu?.trim() || completion.trim(),
+            titre: parsed?.titre || undefined,
+            duree: parsed?.duree ? parseDuration(parsed.duree) : undefined
         };
-    } catch (error) {
-        // En cas d'erreur, on retourne un objet par défaut
-        Logger.log(LogLevel.ERROR, 'Erreur lors du parsing', {
-            error,
-            type,
-            completion,
-            timestamp: new Date().toISOString()
-        });
-
-        return {
-            contenu: completion.substring(0, 400),
-            titre: undefined,
-            duree: undefined
-        };
+    } catch {
+        // Si ce n'est pas du JSON valide, retourner le texte brut
+        return { contenu: completion.trim() };
     }
 };
 
