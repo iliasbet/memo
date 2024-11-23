@@ -17,6 +17,7 @@ import {
 import { ErrorHandler } from '@/lib/errorHandling';
 import { AI_MODELS, MODEL_CONFIG, DEFAULT_MODEL } from '@/constants/ai';
 import { Logger, LogLevel } from '@/lib/logger';
+import { v4 as uuidv4 } from 'uuid';
 
 // Types et interfaces
 export interface AIResponse {
