@@ -8,7 +8,10 @@ export enum SectionType {
     Technique = 'technique',
     Atelier = 'atelier',
     Feedback = 'feedback',
-    Sujet = 'sujet'
+    Sujet = 'sujet',
+    Exemple = 'exemple',
+    Definition = 'definition',
+    Methode = 'methode'
 }
 
 // Structure d'une section de mémo
@@ -62,6 +65,24 @@ export interface MemoContext {
     topic: string;
     objective: string;
     subject?: string;
+    plan?: {
+        accroche: string;
+        histoire: string;
+        concepts: Array<{
+            focus: string;
+            exemple: string;
+        }>;
+        technique: string;
+        atelier: string;
+    };
+    accrocheAngle?: string;
+    histoireType?: string;
+    conceptFocus?: string;
+    exempleFocus?: string;
+    conceptIndex?: number;
+    totalConcepts?: number;
+    techniqueApproche?: string;
+    atelierType?: string;
 }
 
 // Ajouter après les types existants

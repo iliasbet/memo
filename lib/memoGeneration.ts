@@ -13,6 +13,8 @@ import {
     techniquePrompt,
     atelierPrompt,
     sujetPrompt,
+    exemplePrompt,
+    memoPlanner as memoPlannerPrompt,
 } from '@/lib/prompts';
 import { ErrorHandler } from '@/lib/errorHandling';
 import { AI_MODELS, MODEL_CONFIG, DEFAULT_MODEL } from '@/constants/ai';
@@ -24,12 +26,6 @@ export interface AIResponse {
     titre?: string;
     contenu: string;
     duree?: string;
-}
-
-export interface ParsedResponse {
-    titre?: string;
-    contenu: string;
-    duree?: Duration;
 }
 
 export function convertToMemo(document: WithId<Document>): Memo {
@@ -50,10 +46,6 @@ type AnthropicMessage = {
     content: string;
 }
 
-// Service de génération de mémos utilisant OpenAI et Anthropic
-// Gère la création de sections de mémo de manière séquentielle
-
-// Initialisation des clients IA
 if (!process.env.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY is not defined');
 }
@@ -73,9 +65,59 @@ const anthropic = process.env.ANTHROPIC_API_KEY
     : null;
 
 const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000; // 1 seconde
+const RETRY_DELAY = 1000;
 
-export const generateCompletion = async (
+class AIService {
+    constructor(private openai: OpenAI, private anthropic: Anthropic | null) { }
+
+    async generateCompletion(
+        messages: OpenAIMessage[],
+        modelType: "GPT" | "CLAUDE" | undefined = DEFAULT_MODEL,
+        options?: {
+            maxRetries?: number;
+            baseDelay?: number;
+            context?: { type: string; content: string; }
+        }
+    ): Promise<string> {
+        const config = MODEL_CONFIG[modelType];
+
+        switch (config.provider) {
+            case 'openai':
+                const openAICompletion = await this.openai.chat.completions.create({
+                    model: AI_MODELS[modelType],
+                    messages: messages,
+                    temperature: config.temperature,
+                    max_tokens: config.max_tokens,
+                    stream: false
+                });
+                return openAICompletion.choices[0].message.content || '';
+
+            case 'anthropic':
+                if (!this.anthropic) {
+                    throw new Error('ANTHROPIC_API_KEY is not defined');
+                }
+                const anthropicMessages = messages.map(m => ({
+                    role: m.role === 'system' ? 'assistant' : m.role,
+                    content: m.content
+                })) as AnthropicMessage[];
+
+                const anthropicCompletion = await this.anthropic.messages.create({
+                    model: AI_MODELS[modelType],
+                    messages: anthropicMessages,
+                    temperature: config.temperature,
+                    max_tokens: config.max_tokens
+                });
+                return anthropicCompletion.content?.[0]?.text || '';
+
+            default:
+                throw new Error(`Provider non supporté: ${config.provider}`);
+        }
+    }
+}
+
+const aiService = new AIService(openai, anthropic);
+
+export const generateCompletion = (
     messages: OpenAIMessage[],
     modelType: "GPT" | "CLAUDE" | undefined = DEFAULT_MODEL,
     options?: {
@@ -84,39 +126,7 @@ export const generateCompletion = async (
         context?: { type: string; content: string; }
     }
 ) => {
-    const config = MODEL_CONFIG[modelType];
-
-    switch (config.provider) {
-        case 'openai':
-            const openAICompletion = await openai.chat.completions.create({
-                model: AI_MODELS[modelType],
-                messages: messages,
-                temperature: config.temperature,
-                max_tokens: config.max_tokens,
-                stream: false
-            });
-            return openAICompletion.choices[0].message.content || '';
-
-        case 'anthropic':
-            if (!anthropic) {
-                throw new Error('ANTHROPIC_API_KEY is not defined');
-            }
-            const anthropicMessages = messages.map(m => ({
-                role: m.role === 'system' ? 'assistant' : m.role,
-                content: m.content
-            })) as AnthropicMessage[];
-
-            const anthropicCompletion = await anthropic.messages.create({
-                model: AI_MODELS[modelType],
-                messages: anthropicMessages,
-                temperature: config.temperature,
-                max_tokens: config.max_tokens
-            });
-            return anthropicCompletion.content?.[0]?.text || '';
-
-        default:
-            throw new Error(`Provider non supporté: ${config.provider}`);
-    }
+    return aiService.generateCompletion(messages, modelType, options);
 };
 
 // Fonctions utilitaires exportées
@@ -126,23 +136,14 @@ export const isValidAIResponse = (obj: any, type?: SectionType): obj is AIRespon
     if (typeof obj.contenu !== 'string' || obj.contenu.length === 0) return false;
     if (obj.titre !== undefined && typeof obj.titre !== 'string') return false;
     if (obj.duree !== undefined && typeof obj.duree !== 'string') return false;
-
-    // Commentons les validations de longueur pour ne pas bloquer
-    /*
-    const maxLengths: Record<string, number> = {
-        [SectionType.Histoire]: 1000,
-        [SectionType.Atelier]: 800,
-        default: 400
-    };
-
-    const maxLength = type ? (maxLengths[type] || maxLengths.default) : maxLengths.default;
-
-    if (obj.contenu.length > maxLength) return false;
-    if (obj.titre && obj.titre.length > 50) return false;
-    */
-
     return true;
 };
+
+export interface ParsedResponse {
+    titre?: string;
+    contenu: string;
+    duree?: Duration;
+}
 
 export const parseDuration = (dureeStr?: string): Duration | undefined => {
     if (!dureeStr) return undefined;
@@ -157,23 +158,49 @@ export const parseDuration = (dureeStr?: string): Duration | undefined => {
 };
 
 export const parseFormattedResponse = (completion: string, type: SectionType): ParsedResponse => {
-    // Si la réponse est vide, retourner un contenu vide
     if (!completion) {
         return { contenu: '' };
     }
 
     try {
-        // Essayer de parser toute la réponse comme JSON
-        const parsed = JSON.parse(completion);
+        // Nettoyer la réponse avant le parsing
+        const cleanedCompletion = completion
+            .trim()
+            .replace(/\n/g, ' ')
+            .replace(/\s+/g, ' ')
+            .replace(/\\"/g, '"')
+            .replace(/"{2,}/g, '"');  // Remplace les doubles guillemets consécutifs
+
+        // S'assurer que la chaîne commence et finit par des accolades
+        const jsonString = cleanedCompletion.startsWith('{') ? cleanedCompletion : `{${cleanedCompletion}}`;
+
+        const parsed = JSON.parse(jsonString);
+
+        // Vérification et nettoyage du contenu
+        if (typeof parsed.contenu !== 'string') {
+            throw new Error('Le contenu n\'est pas une chaîne de caractères');
+        }
+
+        const contenu = parsed.contenu.trim();
+        const formattedContent = contenu
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/__([^_]+)__/g, '<em>$1</em>');
 
         return {
-            contenu: parsed?.contenu?.trim() || completion.trim(),
-            titre: parsed?.titre || undefined,
+            contenu: formattedContent,
+            titre: parsed?.titre?.trim() || undefined,
             duree: parsed?.duree ? parseDuration(parsed.duree) : undefined
         };
-    } catch {
-        // Si ce n'est pas du JSON valide, retourner le texte brut
-        return { contenu: completion.trim() };
+    } catch (error) {
+        console.error('Erreur lors du parsing du contenu:', error);
+        console.log('Réponse brute:', completion);
+        // Fallback : retourner le texte brut nettoyé
+        return {
+            contenu: completion
+                .trim()
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/__([^_]+)__/g, '<em>$1</em>')
+        };
     }
 };
 
@@ -249,6 +276,21 @@ export const animateSection = async (
     });
 };
 
+// Ajouter après la classe AIService
+class MemoPlanner {
+    async createPlan(topic: string, context: MemoContext): Promise<any> {
+        const planningMessages = [
+            { role: 'system' as const, content: memoPlannerPrompt(context) },
+            { role: 'user' as const, content: topic }
+        ];
+        const planCompletion = await generateCompletion(planningMessages);
+        return JSON.parse(planCompletion);
+    }
+}
+
+// Créer une instance unique du planificateur
+const plannerInstance = new MemoPlanner();
+
 // Génère un mémo complet avec toutes ses sections
 export const generateMemo = async (topic: string): Promise<Memo> => {
     try {
@@ -268,50 +310,76 @@ export const generateMemo = async (topic: string): Promise<Memo> => {
         // Étape 2 : Si aucun mémo existant, générer un nouveau mémo
         console.log(`Aucun mémo trouvé pour l'ID : ${topic}, génération d'un nouveau mémo...`);
 
-        const memoId = uuidv4(); // L'ID sera défini comme le topic fourni
-        const context: MemoContext = {
+        const memoId = uuidv4();
+        const baseContext: MemoContext = {
             topic,
-            objective: topic,
+            objective: topic
         };
 
-        // Extraire le sujet raffiné
-        const subjectSection = await generateSection(topic, sujetPrompt, SectionType.Sujet, context);
-        let parsedSubject: string | undefined;
+        // 1. Obtenir le sujet raffiné
+        const subjectSection = await generateSection(topic, sujetPrompt, SectionType.Sujet, baseContext);
+        const parsedSubject = parseSubject(subjectSection.contenu);
 
-        try {
-            const subjectResponse = JSON.parse(subjectSection.contenu);
-            parsedSubject = subjectResponse.sujet;
-        } catch (error) {
-            Logger.log(LogLevel.WARN, 'Erreur lors du parsing du sujet', {
-                error,
-                content: subjectSection.contenu,
-            });
-            parsedSubject = undefined;
-        }
+        // 2. Générer le plan du mémo
+        const memoPlan = await plannerInstance.createPlan(topic, baseContext);
 
-        // Mettre à jour le contexte avec le sujet raffiné
-        const updatedContext: MemoContext = {
-            ...context,
+        // 3. Générer toutes les sections en parallèle avec le contexte enrichi
+        const enrichedContext = {
+            ...baseContext,
             subject: parsedSubject,
+            plan: memoPlan.progression
         };
 
-        const coverImage = undefined; // Placeholder pour l'image
-
-        // Générer les sections en parallèle
-        const [objectifSection, accrocheSection, conceptSection, histoireSection, techniqueSection, atelierSection] = await Promise.all([
-            generateSection(topic, objectifPrompt, SectionType.Objectif, updatedContext),
-            generateSection(topic, accrochePrompt, SectionType.Accroche, updatedContext),
-            generateSection(topic, conceptPrompt, SectionType.Concept, updatedContext),
-            generateSection(topic, histoirePrompt, SectionType.Histoire, updatedContext),
-            generateSection(topic, techniquePrompt, SectionType.Technique, updatedContext),
-            generateSection(topic, atelierPrompt, SectionType.Atelier, updatedContext),
+        const [
+            objectifSection,
+            accrocheSection,
+            histoireSection,
+            ...conceptSections
+        ] = await Promise.all([
+            generateSection(topic, objectifPrompt, SectionType.Objectif, {
+                ...enrichedContext
+            }),
+            generateSection(topic, accrochePrompt, SectionType.Accroche, {
+                ...enrichedContext,
+                accrocheAngle: memoPlan.progression.accroche
+            }),
+            generateSection(topic, histoirePrompt, SectionType.Histoire, {
+                ...enrichedContext,
+                histoireType: memoPlan.progression.histoire
+            }),
+            ...memoPlan.progression.concepts.flatMap((concept: any, index: number) => [
+                generateSection(topic, conceptPrompt, SectionType.Concept, {
+                    ...enrichedContext,
+                    conceptFocus: concept.focus,
+                    conceptIndex: index + 1,
+                    totalConcepts: memoPlan.progression.concepts.length
+                }),
+                generateSection(topic, exemplePrompt, SectionType.Exemple, {
+                    ...enrichedContext,
+                    exempleFocus: concept.exemple,
+                    conceptIndex: index + 1
+                })
+            ])
         ]);
 
+        // Générer la technique et l'atelier après les concepts
+        const [techniqueSection, atelierSection] = await Promise.all([
+            generateSection(topic, techniquePrompt, SectionType.Technique, {
+                ...enrichedContext,
+                techniqueApproche: memoPlan.progression.technique
+            }),
+            generateSection(topic, atelierPrompt, SectionType.Atelier, {
+                ...enrichedContext,
+                atelierType: memoPlan.progression.atelier
+            })
+        ]);
+
+        // Assembler les sections dans un ordre optimal
         const sections = [
             objectifSection,
             accrocheSection,
-            conceptSection,
             histoireSection,
+            ...conceptSections,
             techniqueSection,
             atelierSection,
             {
@@ -329,7 +397,6 @@ export const generateMemo = async (topic: string): Promise<Memo> => {
                 createdAt: new Date().toISOString(),
                 topic,
                 subject: parsedSubject,
-                coverImage,
             },
         };
 
@@ -341,5 +408,15 @@ export const generateMemo = async (topic: string): Promise<Memo> => {
     } catch (error) {
         console.error('Erreur lors de la génération du mémo:', error);
         throw error;
+    }
+};
+
+const parseSubject = (content: string): string => {
+    try {
+        const parsed = JSON.parse(content);
+        return parsed.sujet || content;
+    } catch (error) {
+        console.error('Erreur lors du parsing du sujet:', error);
+        return content;
     }
 };

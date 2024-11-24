@@ -3,7 +3,6 @@ import { MemoSectionProps, Duration, SectionType } from '@/types';
 import { LoadingCard } from './LoadingCard';
 import { FeedbackCard } from './FeedbackCard';
 import { motion } from 'framer-motion';
-import { MEMO_TEXT_COLORS } from '@/constants/colors';
 
 interface ExtendedMemoSectionProps extends Omit<MemoSectionProps, 'duration'> {
     duration?: Duration;
@@ -11,17 +10,6 @@ interface ExtendedMemoSectionProps extends Omit<MemoSectionProps, 'duration'> {
 }
 
 export const MemoSection: React.FC<ExtendedMemoSectionProps> = memo(({ type, content, color, isActive, isLoading = false, title, duration, isLastSection, direction = 0, topic, idMemo }) => {
-    // console.log('type :', type);
-    // console.log('content :', content);
-    // console.log('color :', color);
-    // console.log('isActive :', isActive);
-    // console.log('isLoading :', isLoading);
-    // console.log('title :', title);
-    // console.log('duration :', duration);
-    // console.log('isLastSection :', isLastSection);
-    // console.log('direction :', direction);
-    // console.log('topic :', topic);
-
     if (!isActive) return null;
     if (isLoading) return <LoadingCard />;
 
@@ -62,6 +50,10 @@ export const MemoSection: React.FC<ExtendedMemoSectionProps> = memo(({ type, con
         return `${duration.value} ${duration.unit}`;
     };
 
+    const formattedContent = content
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/__([^_]+)__/g, '<em>$1</em>');
+
     return (
         <motion.div
             className="absolute inset-0"
@@ -76,7 +68,7 @@ export const MemoSection: React.FC<ExtendedMemoSectionProps> = memo(({ type, con
                     className="relative w-full h-full rounded-2xl flex flex-col items-center justify-center px-20 text-center overflow-hidden"
                     style={{
                         backgroundColor: color,
-                        color: MEMO_TEXT_COLORS[type as keyof typeof MEMO_TEXT_COLORS]
+                        color: 'white'
                     }}
                 >
                     <div className="absolute inset-0 opacity-[0.15] noise-bg" />
@@ -95,12 +87,12 @@ export const MemoSection: React.FC<ExtendedMemoSectionProps> = memo(({ type, con
                                     {title}
                                 </h4>
                                 <p className="text-base sm:text-lg md:text-xl font-normal leading-relaxed">
-                                    {content}
+                                    <span dangerouslySetInnerHTML={{ __html: formattedContent }} />
                                 </p>
                             </>
                         ) : (
                             <p className="text-base sm:text-lg md:text-xl font-normal leading-relaxed">
-                                {content}
+                                <span dangerouslySetInnerHTML={{ __html: formattedContent }} />
                             </p>
                         )}
                     </div>
@@ -120,8 +112,8 @@ export const MemoSection: React.FC<ExtendedMemoSectionProps> = memo(({ type, con
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({
                                             feedback,
-                                            memoRequest: topic, // Déjà présent
-                                            idMemo, // Ajouter idMemo dans le corps de la requête
+                                            memoRequest: topic,
+                                            idMemo,
                                         }),
                                     });
 
@@ -129,10 +121,9 @@ export const MemoSection: React.FC<ExtendedMemoSectionProps> = memo(({ type, con
                                         throw new Error('Erreur lors de l\'envoi du feedback');
                                     }
                                 }}
-                                memoRequest={topic} // Déjà présent
-                                idMemo={idMemo} // Ajout de la prop idMemo
+                                memoRequest={topic}
+                                idMemo={idMemo}
                             />
-
                         </div>
                     )}
                 </div>

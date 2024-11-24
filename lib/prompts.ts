@@ -1,30 +1,18 @@
 import { MemoContext } from '@/types/index';
 
+// Create a shared response format type
+const createResponseFormat = (fields: string[]) => `FORMAT DE RÉPONSE:
+Un objet JSON valide contenant les champs suivants:
+{
+  ${fields.map(field => `"${field}": "[${field}]"`).join(',\n  ')}
+}`;
+
 const STANDARD_RESPONSE_FORMAT = {
-  BASIC: `FORMAT DE RÉPONSE:
-Un objet JSON valide contenant les champs suivants:
-{
-  "contenu": "[contenu]"
-}`,
-  WITH_TITLE: `FORMAT DE RÉPONSE:
-Un objet JSON valide contenant les champs suivants:
-{
-  "titre": "[titre]",
-  "contenu": "[contenu]"
-}`,
-  WITH_DURATION: `FORMAT DE RÉPONSE:
-Un objet JSON valide contenant les champs suivants:
-{
-  "titre": "[titre]",
-  "duree": "[durée]",
-  "contenu": "[contenu]"
-}`,
-  WITH_SUBJECT: `FORMAT DE RÉPONSE:
-Un objet JSON valide contenant les champs suivants:
-{
-  "sujet": "[sujet]"
-}`
-};
+  BASIC: createResponseFormat(['contenu']),
+  WITH_TITLE: createResponseFormat(['titre', 'contenu']),
+  WITH_DURATION: createResponseFormat(['titre', 'duree', 'contenu']),
+  WITH_SUBJECT: createResponseFormat(['sujet'])
+} as const;
 
 // Prompt système de base
 export const systemBasePrompt = `Tu es un expert en pédagogie, comme Richard Feynman.
@@ -34,11 +22,9 @@ RÈGLES ABSOLUES ET NON NÉGOCIABLES :
 2. RÉPONDRE UNIQUEMENT AVEC UN OBJET JSON VALIDE
 
 CONTRAINTES:
-- Répondre avec uniquement l'objet JSON
-- Pas de backticks (\`\`\`) ou autres délimiteurs
-- Pas de retours à la ligne dans le contenu
-- Pas d'échappement de caractères inutile
+- Répondre avec uniquement l'objet JSON valide
 - Pas de commentaires ou texte additionnel
+- **La réponse doit être un objet JSON valide avec des clés et des valeurs correctement formatées.**
 
 SYNTAXE:
 - Utiliser des mots aux lettres courantes: e / a / s / i / t / n / u
@@ -60,17 +46,20 @@ Objectif: ${context.objective}
 - Noms communs génériques uniquement
 - Pas de verbes ni d'articles
 - Privilégier les concepts universels
-- Si possible, préférer un seul mot
+- Si les mots clés de la requête sont justes en terme de choix de titre, alors le prompt doit se contenter de les garder
+- Si possible garder un seul mot
 </règles>
 
 <exemples>
-"Préparer un rapport de réunion" → {"sujet": "communication écrite"}
-"Optimiser la gestion du temps" → {"sujet": "gestion temps"}
-"Développer une stratégie marketing" → {"sujet": "stratégie commerciale"}
-"Améliorer ses techniques de vente" → {"sujet": "persuasion"}
-"Créer un plan de formation" → {"sujet": "ingénierie pédagogique"}
-"Formation à la gestion du stress" → {"sujet": "stress management"}
-"memo sur le management" → {"sujet": "management"}
+{
+  "Préparer un rapport de réunion": {"sujet": "communication écrite"},
+  "Optimiser la gestion du temps": {"sujet": "gestion temps"},
+  "Développer une stratégie marketing": {"sujet": "stratégie commerciale"},
+  "Améliorer ses techniques de vente": {"sujet": "persuasion"},
+  "Créer un plan de formation": {"sujet": "ingénierie pédagogique"},
+  "Formation à la gestion du stress": {"sujet": "stress management"},
+  "memo sur le management": {"sujet": "management"}
+}
 </exemples>
 
 ${STANDARD_RESPONSE_FORMAT.WITH_SUBJECT}`;
@@ -92,17 +81,17 @@ Tâche: Rédiger une phrase d'objectif cognitif
 
 <exemples>
 EXEMPLE 1:
-Expliquer un processus de recrutement.
+{ "contenu": "Expliquer un processus de recrutement" }
 - Action : Expliquer
 - Complément : un processus de recrutement
 
 EXEMPLE 2:
-Préparer un rapport de réunion.
+{ "contenu": "Préparer un rapport de réunion" }
 - Action : Préparer
 - Complément : un rapport de réunion
 
 EXEMPLE 3:
-Présenter un plan d’action détaillé.
+{ "contenu": "Présenter un plan d’action détaillé" }
 - Action : Présenter
 - Complément : un plan d’action détaillé
 </exemples>
@@ -131,6 +120,7 @@ INTERDICTIONS ABSOLUES:
 5. Ne jamais paraphraser l'objectif
 6. Ne jamais utiliser de crochets [] ou de placeholders
 7. Ne jamais copier les structures d'exemple telles quelles
+8. Les mots-clés importants doivent être encadrés par des underscores __mot__
 
 STRUCTURE REQUISE:
 - Maximum 50 caractères
@@ -152,16 +142,16 @@ Exemples de structures validées:
 </référence_accroches>
 
 <exemples_validés>
-"Pourquoi la routine tue la créativité ?"
-"Que se passe-t-il quand on arrête de planifier ?"
-"Qu'est-ce qui rend le silence si puissant ?"
+{ "contenu": "Pourquoi la __routine__ tue la __créativité__ ?" }
+{ "contenu": "Que se passe-t-il quand on arrête de __planifier__ ?" }
+{ "contenu": "Qu'est-ce qui rend le __silence__ si puissant ?" }
 </exemples_validés>
 
 <exemples_rejetés>
-"Prêt à booster votre productivité ?" → REJETÉ: Commence par "Prêt à"
-"Découvrez les secrets de l'agilité" → REJETÉ: Commence par "Découvrez"
-"Comment [action] peut [résultat] ?" → REJETÉ: Utilise des placeholders
-"Voulez-vous améliorer vos performances ?" → REJETÉ: Trop générique
+{ "contenu": "Prêt à booster votre productivité ?" } → REJETÉ: Commence par "Prêt à"
+{ "contenu": "Découvrez les secrets de l'agilité" } → REJETÉ: Commence par "Découvrez"
+{ "contenu": "Comment [action] peut [résultat] ?" } → REJETÉ: Utilise des placeholders
+{ "contenu": "Voulez-vous améliorer vos performances ?" } → REJETÉ: Trop générique
 </exemples_rejetés>
 
 ${STANDARD_RESPONSE_FORMAT.BASIC}`;
@@ -238,12 +228,14 @@ Objectif: ${context.objective}
 </contexte>
 
 <règles_strictes>
-1. NE JAMAIS répéter les termes de l'idée précédente
-2. NE JAMAIS utiliser le même angle d'approche
-3. OBLIGATION d'apporter un concept nouveau et complémentaire
-4. OBLIGATION d'écrire des phrases complètes avec sujet, verbe et complément
-5. OBLIGATION d'utiliser des articles (le, la, les, un, une)
-6. OBLIGATION d'utiliser au moins un connecteur logique (car, donc, ainsi)
+1. OBLIGATION d'apporter un concept TOTALEMENT NOUVEAU
+2. INTERDICTION de réutiliser des mots-clés des concepts précédents
+3. OBLIGATION de choisir un angle d'approche RADICALEMENT DIFFÉRENT
+4. OBLIGATION d'explorer une dimension inexploitée du sujet
+5. OBLIGATION d'écrire des phrases complètes avec sujet, verbe et complément
+6. OBLIGATION d'utiliser des articles (le, la, les, un, une)
+7. OBLIGATION d'utiliser au moins un connecteur logique (car, donc, ainsi)
+8. MISE EN FORME : Utiliser des underscores __ pour les points clés (SAUF POUR LE TITRE)
 </règles_strictes>
 
 <instructions>
@@ -253,6 +245,20 @@ Objectif: ${context.objective}
 - Choisir un aspect technique ou méthodologique nouveau
 - Enrichir la compréhension avec un angle différent
 </instructions>
+
+<exemples>
+BON EXEMPLE [Sujet : Méthode Agile]:
+{
+  "titre": "Réunion Sprint",
+  "contenu": "Un __Sprint__ est une période de __2 à 4 semaines__. Une réunion __Sprint__ est une réunion de planification qui permet de définir les __priorités__ et les __objectifs__ du sprint en cours."
+}
+
+BON EXEMPLE [Sujet : Communication]:
+{
+  "titre": "Vérité radicale",
+  "contenu": "La __vérité radicale__ consiste à dire ce que vous pensez, sans vous censurer, sans vous limiter, sans vous épargner. Même si cela peut être difficile, cela limite les __malentendus__ et les __méprises__."
+}
+</exemples>
 
 ${STANDARD_RESPONSE_FORMAT.WITH_TITLE}`;
 
@@ -265,6 +271,10 @@ Tâche: Proposer une recette intuitive et intelligente
 Objectif: ${context.objective}
 </contexte>
 
+<règles_strictes>
+1. Les mots-clés importants doivent être encadrés par des underscores __mot__
+</règles_strictes>
+
 <instructions>
 - Maximum 3 mots pour le titre
 - Maximum 300 caractères pour le contenu
@@ -276,7 +286,7 @@ Objectif: ${context.objective}
 BON EXEMPLE:
 {
   "titre": "Règle des trois",
-  "contenu": "Face à une décision complexe (situation), identifiez seulement trois options possibles (approche). Cette contrainte force votre cerveau à prioriser et simplifie drastiquement votre choix final (impact)."
+  "contenu": "Face à une __décision complexe__, identifiez seulement __trois options__ possibles. Cette __contrainte__ force votre cerveau à __prioriser__ et simplifie drastiquement votre __choix final__."
 }
 
 MAUVAIS EXEMPLE:
@@ -288,6 +298,53 @@ MAUVAIS EXEMPLE:
 
 ${STANDARD_RESPONSE_FORMAT.WITH_TITLE}`;
 
+// Exemple
+export const exemplePrompt = (context: MemoContext) => `${systemBasePrompt}
+
+Rôle: Expert en études de cas
+Tâche: Fournir un exemple concret qui illustre DIRECTEMENT le concept précédent
+
+<contexte>
+Objectif: ${context.objective}
+Concept à illustrer: ${context.conceptFocus}
+</contexte>
+
+<règles_strictes>
+1. OBLIGATION d'illustrer UNIQUEMENT le concept qui précède
+2. OBLIGATION de reprendre les mêmes termes techniques que le concept
+3. OBLIGATION de montrer l'application pratique du concept
+4. OBLIGATION d'inclure un contexte réel et vérifiable
+5. OBLIGATION de montrer un résultat mesurable
+6. OBLIGATION de formuler l'exemple au présent
+7. NE JAMAIS introduire de nouveaux concepts
+8. NE JAMAIS s'écarter du focus du concept précédent
+9. Les mots-clés importants doivent être encadrés par des underscores __mot__
+</règles_strictes>
+
+<instructions>
+- Maximum 3 mots pour le titre
+- Maximum 250 caractères pour le contenu
+- Structure: situation actuelle > application du concept > résultat concret
+- Exemple spécifique qui démontre l'efficacité du concept
+- Chiffres et métriques quand possible
+- Utiliser le présent de l'indicatif
+</instructions>
+
+<exemples>
+CONCEPT PRÉCÉDENT:
+{
+  "titre": "Loi de Pareto",
+  "contenu": "La loi des 80/20 stipule que 80% des résultats proviennent de 20% des efforts. Cette règle permet d'identifier et prioriser les actions à fort impact."
+}
+
+EXEMPLE CORRESPONDANT:
+{
+  "titre": "Ventes Amazon",
+  "contenu": "Amazon analyse ses données et constate que __20% de ses produits__ génèrent __82% de son chiffre d'affaires__. En appliquant ce __principe de Pareto__, l'entreprise réduit ses __coûts de stockage__ de __30%__."
+}
+</exemples>
+
+${STANDARD_RESPONSE_FORMAT.WITH_TITLE}`;
 
 // Atelier
 export const atelierPrompt = (context: MemoContext) => `${systemBasePrompt}
@@ -297,6 +354,10 @@ Tâche: Proposer une consigne claire d'atelier pratique
 <contexte>
 Objectif: ${context.objective}
 </contexte>
+
+<règles_strictes>
+1. Les mots-clés importants doivent être encadrés par des underscores __mot__
+</règles_strictes>
 
 <instructions>
 - Maximum 2 mots pour le titre
@@ -312,7 +373,7 @@ BON EXEMPLE:
 {
   "titre": "Pitch Challenge",
   "duree": "2 heures",
-  "contenu": "Objectif: Maîtriser l'art du pitch en situation réelle. Bénéfice: Gagner en assurance face à un public exigeant. Déroulé: Chaque participant prépare un pitch de 2 minutes, le présente au groupe, reçoit des retours constructifs, puis l'améliore."
+  "contenu": "Objectif: Maîtriser l'art du __pitch__ en situation réelle. Bénéfice: Gagner en __assurance__ face à un __public exigeant__. Déroulé: Chaque participant prépare un __pitch de 2 minutes__, le présente au groupe, reçoit des __retours constructifs__, puis l'améliore."
 }
 
 MAUVAIS EXEMPLE:
@@ -325,28 +386,109 @@ MAUVAIS EXEMPLE:
 
 ${STANDARD_RESPONSE_FORMAT.WITH_DURATION}`;
 
-// Couverture
-export const coverImagePrompt = (context: MemoContext) => `Créez une œuvre abstraite pour le sujet: "${context.subject || context.topic}".
+export const memoPlanner = (context: MemoContext) => `${systemBasePrompt}
 
-STYLE ARTISTIQUE:
-- Contrastes profonds, teintes éteintes, lumière subtile.
-- Mélange harmonieux de couleurs pastel et vives
-- Transitions douces et textures fluides
-- Coups de pinceau libres et expressifs
-- Focus sur l'émotion plutôt que le détail
-- Inspiration impressionniste et abstraite moderne
+Rôle: Architecte pédagogique
+Tâche: Concevoir un plan de progression logique pour un mémo pédagogique
 
-ÉLÉMENTS VISUELS:
-- Formes organiques et fluides
-- Jeux de lumière et d'ombre
-- Dégradés subtils et naturels
-- Composition équilibrée et aérée
-- Profondeur et mouvement
+<contexte>
+Sujet: ${context.topic}
+Objectif: ${context.objective}
+</contexte>
 
-INTERDICTIONS:
-- Pas de texte ou symboles
-- Pas d'éléments figuratifs précis
-- Pas de visages ou silhouettes
-- Pas de logos ou marques
+<règles_strictes>
+1. INTERDICTION ABSOLUE de réutiliser un même mot dans plusieurs titres
+2. OBLIGATION d'explorer des angles RADICALEMENT différents pour chaque concept
+3. OBLIGATION de créer une progression logique et cohérente
+4. INTERDICTION de répéter des concepts ou idées similaires
+5. OBLIGATION de varier les approches pédagogiques
 
-FORMAT: Image carrée 1024x1024 pixels`;
+FORMAT DE RÉPONSE:
+{
+  "progression": {
+    "accroche": {
+      "angle": "[paradoxe ou tension à explorer]",
+      "mots_clés": ["mot1", "mot2"]
+    },
+    "histoire": {
+      "type": "[type d'histoire]",
+      "focus": "[élément clé à mettre en avant]"
+    },
+    "concepts": [
+      {
+        "titre": "[titre unique et original]",
+        "focus": "[aspect spécifique à explorer]",
+        "mots_clés": ["mot1", "mot2", "mot3"],
+        "exemple": {
+          "type": "[type d'exemple]",
+          "focus": "[aspect à illustrer]"
+        }
+      }
+    ],
+    "technique": {
+      "titre": "[titre unique et original]",
+      "approche": "[méthode spécifique]",
+      "mots_clés": ["mot1", "mot2"]
+    },
+    "atelier": {
+      "titre": "[titre unique et original]",
+      "type": "[format d'exercice]",
+      "durée": "[estimation en heures]"
+    }
+  }
+}
+</règles_strictes>
+
+<instructions_titres>
+RÈGLES DE NOMMAGE:
+- Chaque titre doit être UNIQUE
+- Maximum 4 mots par titre
+- Éviter les mots génériques (méthode, technique, approche)
+- Privilégier des associations de mots inattendues
+- Utiliser des métaphores originales
+</instructions_titres>
+
+<exemple>
+{
+  "progression": {
+    "accroche": {
+      "angle": "paradoxe entre simplicité et impact",
+      "mots_clés": ["simplicité", "impact"]
+    },
+    "histoire": {
+      "type": "pivot stratégique",
+      "focus": "transformation inattendue"
+    },
+    "concepts": [
+      {
+        "titre": "Effet Papillon",
+        "focus": "impact des micro-décisions",
+        "mots_clés": ["cascade", "effet", "amplification"],
+        "exemple": {
+          "type": "cas d'entreprise",
+          "focus": "petite décision, grand impact"
+        }
+      },
+      {
+        "titre": "Zone Aveugle",
+        "focus": "biais cognitifs inconscients",
+        "mots_clés": ["perception", "inconscient", "biais"],
+        "exemple": {
+          "type": "expérience scientifique",
+          "focus": "révélation d'un biais"
+        }
+      }
+    ],
+    "technique": {
+      "titre": "Radar Mental",
+      "approche": "outil d'auto-observation",
+      "mots_clés": ["observation", "conscience"]
+    },
+    "atelier": {
+      "titre": "Sprint Miroir",
+      "type": "exercice d'auto-analyse",
+      "durée": "2 heures"
+    }
+  }
+}
+</exemple>`;

@@ -19,10 +19,13 @@
     --sheet-background: 0 0% 10%;
     --sheet-foreground: 0 0% 100%;
     --sheet-border: 0 0% 20%;
+
+    --font-lexend-regular: 'Lexend Deca', sans-serif;
+    --font-lexend-semibold: 'Lexend Deca', sans-serif;
   }
 
   html {
-    font-family: var(--font-lexend), Helvetica, Arial, sans-serif;
+    font-family: var(--font-lexend-light);
     font-weight: 500;
     scroll-behavior: smooth;
   }
@@ -401,4 +404,9 @@ button:focus {
 
 .cover-image-transition:hover {
     transform: scale(1.05);
+}
+
+strong {
+    font-family: var(--font-lexend-semibold);
+    font-weight: 600; /* Semibold */
 }
