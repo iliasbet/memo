@@ -15,8 +15,4 @@ const nextConfig = {
     }
 };
 
-const config = {
-    // ... keep your other existing config options ...
-};
-
-export default config; 
+export default nextConfig; 
