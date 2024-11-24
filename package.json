@@ -3,11 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "NODE_NO_WARNINGS=1 NODE_OPTIONS='--no-warnings' next dev",
     "build": "next build",
     "start": "next start",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "clean": "rm -rf .next",
+    "dev:clean": "npm run clean && npm run dev"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.18.0",

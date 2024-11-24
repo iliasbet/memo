@@ -12,7 +12,27 @@ const nextConfig = {
                 ]
             }
         ]
-    }
+    },
+
+    webpack: (config, { dev, isServer }) => {
+        if (!isServer) {
+            config.resolve.fallback = {
+                ...config.resolve.fallback,
+                punycode: false,
+            };
+        }
+
+        if (dev) {
+            config.cache = false;
+        }
+
+        return config;
+    },
+
+    poweredByHeader: false,
+    reactStrictMode: true,
+    compress: true,
+    generateEtags: true,
 };
 
 export default nextConfig; 
