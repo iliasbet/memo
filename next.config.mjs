@@ -1,5 +1,3 @@
-import withPWA from 'next-pwa';
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     async headers() {
@@ -17,9 +15,8 @@ const nextConfig = {
     }
 };
 
-const withPWAConfig = withPWA({
-    dest: 'public',
-    disable: process.env.NODE_ENV === 'development'
-});
+const config = {
+    // ... keep your other existing config options ...
+};
 
-export default withPWAConfig(nextConfig); 
+export default config; 
