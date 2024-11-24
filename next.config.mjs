@@ -1,5 +1,3 @@
-import withPWA from 'next-pwa';
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     async headers() {
@@ -14,12 +12,27 @@ const nextConfig = {
                 ]
             }
         ]
-    }
+    },
+
+    webpack: (config, { dev, isServer }) => {
+        if (!isServer) {
+            config.resolve.fallback = {
+                ...config.resolve.fallback,
+                punycode: false,
+            };
+        }
+
+        if (dev) {
+            config.cache = false;
+        }
+
+        return config;
+    },
+
+    poweredByHeader: false,
+    reactStrictMode: true,
+    compress: true,
+    generateEtags: true,
 };
 
-const withPWAConfig = withPWA({
-    dest: 'public',
-    disable: process.env.NODE_ENV === 'development'
-});
-
-export default withPWAConfig(nextConfig); 
+export default nextConfig; 

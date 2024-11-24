@@ -64,13 +64,13 @@ Objectif: ${context.objective}
 </règles>
 
 <exemples>
-"Préparer un rapport de réunion" → "communication écrite"
-"Optimiser la gestion du temps" → "gestion temps"
-"Développer une stratégie marketing" → "stratégie commerciale"
-"Améliorer ses techniques de vente" → "persuasion"
-"Créer un plan de formation" → "ingénierie pédagogique"
-"Formation à la gestion du stress" → "stress management"
-"memo sur le management" → "management"
+"Préparer un rapport de réunion" → {"sujet": "communication écrite"}
+"Optimiser la gestion du temps" → {"sujet": "gestion temps"}
+"Développer une stratégie marketing" → {"sujet": "stratégie commerciale"}
+"Améliorer ses techniques de vente" → {"sujet": "persuasion"}
+"Créer un plan de formation" → {"sujet": "ingénierie pédagogique"}
+"Formation à la gestion du stress" → {"sujet": "stress management"}
+"memo sur le management" → {"sujet": "management"}
 </exemples>
 
 ${STANDARD_RESPONSE_FORMAT.WITH_SUBJECT}`;
@@ -207,17 +207,22 @@ Objectif: ${context.objective}
 
 <exemples>
 BON EXEMPLE:
-TITRE: Échec Créatif
-CONTENU: En 1968, Spencer Silver cherchait à créer une super-colle pour 3M. Son expérience échoue, produisant une colle qui adhère faiblement et se décolle facilement. Pendant 5 ans, il cherche en vain une application. C'est son collègue Art Fry qui, agacé par les marque-pages qui tombent de son livre de chants, réalise le potentiel : le Post-it était né.
+{
+  "titre": "Échec Créatif",
+  "contenu": "En 1968, Spencer Silver cherchait à créer une super-colle pour 3M. Son expérience échoue, produisant une colle qui adhère faiblement et se décolle facilement. Pendant 5 ans, il cherche en vain une application. C'est son collègue Art Fry qui, agacé par les marque-pages qui tombent de son livre de chants, réalise le potentiel : le Post-it était né."
+}
 
 MAUVAIS EXEMPLE:
-TITRE: Histoire Inspirante
-CONTENU: Un jour, quelqu'un a eu une idée et a travaillé dur pour la réaliser. Après beaucoup d'efforts, il a réussi et tout le monde était content.
-→ Trop vague, pas de détails spécifiques, pas d'authenticité
+{
+  "titre": "Histoire Inspirante",
+  "contenu": "Un jour, quelqu'un a eu une idée et a travaillé dur pour la réaliser. Après beaucoup d'efforts, il a réussi et tout le monde était content."
+}
 
 BON EXEMPLE:
-TITRE: Pivot Netflix
-CONTENU: En 2007, Reed Hastings observe l'essor de YouTube. Malgré un business model rentable de location de DVDs, il prend la décision risquée de transformer Netflix en service de streaming. Son équipe pense qu'il est fou. Aujourd'hui, cette décision contre-intuitive a révolutionné l'industrie du divertissement.
+{
+  "titre": "Pivot Netflix",
+  "contenu": "En 2007, Reed Hastings observe l'essor de YouTube. Malgré un business model rentable de location de DVDs, il prend la décision risquée de transformer Netflix en service de streaming. Son équipe pense qu'il est fou. Aujourd'hui, cette décision contre-intuitive a révolutionné l'industrie du divertissement."
+}
 </exemples>
 
 ${STANDARD_RESPONSE_FORMAT.WITH_TITLE}`;
@@ -269,12 +274,16 @@ Objectif: ${context.objective}
 
 <exemples>
 BON EXEMPLE:
-TITRE: Règle des trois
-CONTENU: Face à une décision complexe (situation), identifiez seulement trois options possibles (approche). Cette contrainte force votre cerveau à prioriser et simplifie drastiquement votre choix final (impact).
+{
+  "titre": "Règle des trois",
+  "contenu": "Face à une décision complexe (situation), identifiez seulement trois options possibles (approche). Cette contrainte force votre cerveau à prioriser et simplifie drastiquement votre choix final (impact)."
+}
 
 MAUVAIS EXEMPLE:
-TITRE: Processus décisionnel optimisé
-CONTENU: Utilisez cette approche révolutionnaire pour transformer votre vie.
+{
+  "titre": "Processus décisionnel optimisé",
+  "contenu": "Utilisez cette approche révolutionnaire pour transformer votre vie."
+}
 </exemples>
 
 ${STANDARD_RESPONSE_FORMAT.WITH_TITLE}`;
@@ -300,14 +309,18 @@ Objectif: ${context.objective}
 
 <exemples>
 BON EXEMPLE:
-TITRE: Pitch Challenge
-DURÉE: 2 heures
-CONTENU: Objectif: Maîtriser l'art du pitch en situation réelle. Bénéfice: Gagner en assurance face à un public exigeant. Déroulé: Chaque participant prépare un pitch de 2 minutes, le présente au groupe, reçoit des retours constructifs, puis l'améliore.
+{
+  "titre": "Pitch Challenge",
+  "duree": "2 heures",
+  "contenu": "Objectif: Maîtriser l'art du pitch en situation réelle. Bénéfice: Gagner en assurance face à un public exigeant. Déroulé: Chaque participant prépare un pitch de 2 minutes, le présente au groupe, reçoit des retours constructifs, puis l'améliore."
+}
 
 MAUVAIS EXEMPLE:
-TITRE: Communication Efficace
-DURÉE: 30 minutes
-CONTENU: On va faire des exercices de communication.
+{
+  "titre": "Communication Efficace",
+  "duree": "30 minutes",
+  "contenu": "On va faire des exercices de communication."
+}
 </exemples>
 
 ${STANDARD_RESPONSE_FORMAT.WITH_DURATION}`;

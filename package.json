@@ -3,11 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "NODE_NO_WARNINGS=1 NODE_OPTIONS='--no-warnings' next dev",
     "build": "next build",
     "start": "next start",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "clean": "rm -rf .next",
+    "dev:clean": "npm run clean && npm run dev"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.18.0",
@@ -26,19 +28,20 @@
     "mongodb": "^6.10.0",
     "mongoose": "^8.8.1",
     "next": "^15.0.3",
-    "next-pwa": "^5.6.0",
     "openai": "^4.71.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "stripe": "^17.3.1",
     "tailwind-merge": "^2.5.4",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "uuid": "^11.0.3"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^8.13.0",
     "@typescript-eslint/parser": "^8.13.0",
     "autoprefixer": "^10.4.20",
