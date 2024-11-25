@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "set NODE_NO_WARNINGS=1&& set NODE_OPTIONS=--no-warnings&& next dev",
+    "dev": "cross-env NODE_NO_WARNINGS=1 NODE_OPTIONS=--no-warnings next dev",
     "build": "next build",
     "start": "next start",
     "test": "jest",
@@ -54,7 +54,8 @@
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.14",
     "ts-jest": "^29.2.5",
-    "typescript": "^5"
+    "typescript": "^5",
+    "cross-env": "^7.0.3"
   },
   "lint-staged": {
     "*.ts?(x)": "eslint --fix",
