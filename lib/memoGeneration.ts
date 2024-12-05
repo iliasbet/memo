@@ -1,422 +1,373 @@
-import OpenAI from 'openai';
-import { Document, WithId } from 'mongodb';
-import { MongoClient } from 'mongodb';
-import { saveMemoToDatabase } from './saveMemoDb';
-import Anthropic from '@anthropic-ai/sdk';
-import { MemoSection, SectionType, Memo, Duration, MemoContext } from '@/types';
+import { OpenAI } from 'openai';
+import { logger } from './logger';
+import { memoPlanner, objectifPrompt, accrochePrompt, techniquePrompt, histoirePrompt, atelierPrompt } from './prompts';
+import { MemoSection, SectionType, Memo, MemoContext } from '@/types';
 import { MEMO_COLORS } from '@/constants/colors';
-import {
-    objectifPrompt,
-    accrochePrompt,
-    conceptPrompt,
-    histoirePrompt,
-    techniquePrompt,
-    atelierPrompt,
-    sujetPrompt,
-    exemplePrompt,
-    memoPlanner as memoPlannerPrompt,
-} from '@/lib/prompts';
-import { ErrorHandler } from '@/lib/errorHandling';
-import { AI_MODELS, MODEL_CONFIG, DEFAULT_MODEL } from '@/constants/ai';
-import { Logger, LogLevel } from '@/lib/logger';
-import { v4 as uuidv4 } from 'uuid';
-
-// Types et interfaces
-export interface AIResponse {
-    titre?: string;
-    contenu: string;
-    duree?: string;
-}
-
-export function convertToMemo(document: WithId<Document>): Memo {
-    return {
-        id: document.id,
-        sections: document.sections,
-        metadata: document.metadata,
-    };
-}
-
-type OpenAIMessage = {
-    role: 'system' | 'user' | 'assistant';
-    content: string;
-}
-
-type AnthropicMessage = {
-    role: 'user' | 'assistant';
-    content: string;
-}
-
-if (!process.env.OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY is not defined');
-}
-
-if (!process.env.ANTHROPIC_API_KEY) {
-    throw new Error('ANTHROPIC_API_KEY is not defined');
-}
+import { OpenAIError, ValidationError } from '@/types/errors';
+import { termcolor } from './logger';
 
 const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
+    apiKey: process.env.OPENAI_API_KEY,
 });
 
-const anthropic = process.env.ANTHROPIC_API_KEY
-    ? new Anthropic({
-        apiKey: process.env.ANTHROPIC_API_KEY
-    })
-    : null;
-
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000;
-
-class AIService {
-    constructor(private openai: OpenAI, private anthropic: Anthropic | null) { }
-
-    async generateCompletion(
-        messages: OpenAIMessage[],
-        modelType: "GPT" | "CLAUDE" | undefined = DEFAULT_MODEL,
-        options?: {
-            maxRetries?: number;
-            baseDelay?: number;
-            context?: { type: string; content: string; }
-        }
-    ): Promise<string> {
-        const config = MODEL_CONFIG[modelType];
-
-        switch (config.provider) {
-            case 'openai':
-                const openAICompletion = await this.openai.chat.completions.create({
-                    model: AI_MODELS[modelType],
-                    messages: messages,
-                    temperature: config.temperature,
-                    max_tokens: config.max_tokens,
-                    stream: false
-                });
-                return openAICompletion.choices[0].message.content || '';
-
-            case 'anthropic':
-                if (!this.anthropic) {
-                    throw new Error('ANTHROPIC_API_KEY is not defined');
+// Helper function to parse AI responses
+function parseAIResponse(response: string): { titre?: string; contenu: string } {
+    try {
+        // First try to parse as JSON
+        if (response.includes('{') && response.includes('}')) {
+            // Extract JSON part if it's wrapped in backticks or other text
+            const jsonMatch = response.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                const parsed = JSON.parse(jsonMatch[0]);
+                if (parsed.contenu && parsed.contenu.length > 220) {
+                    logger.warn('Concept content exceeds 220 characters, truncating...', { length: parsed.contenu.length });
+                    parsed.contenu = parsed.contenu.substring(0, 220).trim();
                 }
-                const anthropicMessages = messages.map(m => ({
-                    role: m.role === 'system' ? 'assistant' : m.role,
-                    content: m.content
-                })) as AnthropicMessage[];
-
-                const anthropicCompletion = await this.anthropic.messages.create({
-                    model: AI_MODELS[modelType],
-                    messages: anthropicMessages,
-                    temperature: config.temperature,
-                    max_tokens: config.max_tokens
-                });
-                return anthropicCompletion.content?.[0]?.text || '';
-
-            default:
-                throw new Error(`Provider non supporté: ${config.provider}`);
-        }
-    }
-}
-
-const aiService = new AIService(openai, anthropic);
-
-export const generateCompletion = (
-    messages: OpenAIMessage[],
-    modelType: "GPT" | "CLAUDE" | undefined = DEFAULT_MODEL,
-    options?: {
-        maxRetries?: number;
-        baseDelay?: number;
-        context?: { type: string; content: string; }
-    }
-) => {
-    return aiService.generateCompletion(messages, modelType, options);
-};
-
-// Fonctions utilitaires exportées
-export const isValidAIResponse = (obj: any, type?: SectionType): obj is AIResponse => {
-    // Validation de base
-    if (!obj || typeof obj !== 'object') return false;
-    if (typeof obj.contenu !== 'string' || obj.contenu.length === 0) return false;
-    if (obj.titre !== undefined && typeof obj.titre !== 'string') return false;
-    if (obj.duree !== undefined && typeof obj.duree !== 'string') return false;
-    return true;
-};
-
-export interface ParsedResponse {
-    titre?: string;
-    contenu: string;
-    duree?: Duration;
-}
-
-export const parseDuration = (dureeStr?: string): Duration | undefined => {
-    if (!dureeStr) return undefined;
-    const value = parseInt(dureeStr);
-    if (isNaN(value)) return undefined;
-
-    if (dureeStr.includes('heure')) return { value, unit: 'h' };
-    if (dureeStr.includes('minute')) return { value, unit: 'min' };
-    if (dureeStr.includes('jour')) return { value, unit: 'j' };
-
-    return { value, unit: 'min' };
-};
-
-export const parseFormattedResponse = (completion: string, type: SectionType): ParsedResponse => {
-    if (!completion) {
-        return { contenu: '' };
-    }
-
-    try {
-        // Nettoyer la réponse avant le parsing
-        const cleanedCompletion = completion
-            .trim()
-            .replace(/\n/g, ' ')
-            .replace(/\s+/g, ' ')
-            .replace(/\\"/g, '"')
-            .replace(/"{2,}/g, '"');  // Remplace les doubles guillemets consécutifs
-
-        // S'assurer que la chaîne commence et finit par des accolades
-        const jsonString = cleanedCompletion.startsWith('{') ? cleanedCompletion : `{${cleanedCompletion}}`;
-
-        const parsed = JSON.parse(jsonString);
-
-        // Vérification et nettoyage du contenu
-        if (typeof parsed.contenu !== 'string') {
-            throw new Error('Le contenu n\'est pas une chaîne de caractères');
-        }
-
-        const contenu = parsed.contenu.trim();
-        const formattedContent = contenu
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/__([^_]+)__/g, '<em>$1</em>');
-
-        return {
-            contenu: formattedContent,
-            titre: parsed?.titre?.trim() || undefined,
-            duree: parsed?.duree ? parseDuration(parsed.duree) : undefined
-        };
-    } catch (error) {
-        console.error('Erreur lors du parsing du contenu:', error);
-        console.log('Réponse brute:', completion);
-        // Fallback : retourner le texte brut nettoyé
-        return {
-            contenu: completion
-                .trim()
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/__([^_]+)__/g, '<em>$1</em>')
-        };
-    }
-};
-
-// Génère une section spécifique du mémo
-export const generateSection = async (
-    content: string,
-    prompt: (context: MemoContext) => string,
-    type: SectionType,
-    context: MemoContext
-): Promise<MemoSection> => {
-    const color = MEMO_COLORS[type as keyof typeof MEMO_COLORS] || '#000000';
-
-    try {
-        const messages = [
-            { role: 'system' as const, content: prompt(context) },
-            { role: 'user' as const, content }
-        ];
-
-        const completion = await ErrorHandler.withRetry(
-            () => generateCompletion(messages),
-            {
-                maxRetries: MAX_RETRIES,
-                baseDelay: RETRY_DELAY,
-                context: { type, content }
+                return {
+                    titre: parsed.titre,
+                    contenu: parsed.contenu || parsed.content || ''
+                };
             }
-        );
+        }
 
-        const { titre, contenu, duree } = parseFormattedResponse(completion, type);
-
+        // If not JSON or parsing fails, return the raw content
+        const content = response.trim();
+        if (content.length > 220) {
+            logger.warn('Raw content exceeds 220 characters, truncating...', { length: content.length });
+            return {
+                contenu: content.substring(0, 220).trim()
+            };
+        }
         return {
-            type,
-            titre,
-            contenu,
-            couleur: color,
-            duree
+            contenu: content
         };
     } catch (error) {
-        console.error(`Erreur lors de la génération de la section ${type}:`, error);
-        throw error;
+        logger.warn('Failed to parse AI response as JSON, using raw text', { response });
+        const content = response.trim();
+        if (content.length > 220) {
+            return {
+                contenu: content.substring(0, 220).trim()
+            };
+        }
+        return {
+            contenu: content
+        };
     }
-};
+}
 
-export const animateSection = async (
-    section: MemoSection,
-    onProgress: (section: MemoSection) => void,
-    duration: number = 1500
-): Promise<void> => {
-    const startTime = Date.now();
-    const content = section.contenu;
+export async function generateMemo(content: string): Promise<Memo> {
+    try {
+        logger.info('Starting memo generation');
+        termcolor.blue('🎯 Generating objective...');
 
-    return new Promise((resolve) => {
-        const animate = () => {
-            const elapsedTime = Date.now() - startTime;
-            const progress = Math.min(elapsedTime / duration, 1);
-            const easeProgress = 1 - Math.pow(1 - progress, 3);
+        // 1. Generate objective
+        const objective = await generateObjective(content);
+        termcolor.green('✓ Objective generated');
 
-            const charsToShow = Math.floor(content.length * easeProgress);
+        // 2. Generate plan using memo planner
+        termcolor.blue('📋 Planning memo structure...');
+        const context: MemoContext = {
+            topic: content,
+            objective
+        };
 
-            onProgress({
-                ...section,
-                contenu: content.slice(0, charsToShow)
+        const plan = await generatePlan(context);
+        termcolor.green('✓ Memo plan generated');
+
+        // 3. Generate sections based on the plan
+        termcolor.blue('📝 Generating sections...');
+        const sections: MemoSection[] = [];
+
+        // Add objective section
+        sections.push({
+            type: SectionType.Objectif,
+            contenu: objective,
+            couleur: MEMO_COLORS.objectif
+        });
+
+        // Generate accroche
+        const accroche = await generateAccroche(context);
+        sections.push({
+            type: SectionType.Accroche,
+            contenu: accroche,
+            couleur: MEMO_COLORS.accroche
+        });
+
+        // Generate histoire
+        termcolor.blue('📖 Generating histoire...');
+        const histoire = await generateHistoire({
+            ...context,
+            histoireType: plan.progression.histoire.type,
+            accrocheAngle: plan.progression.accroche.angle
+        });
+        sections.push({
+            type: SectionType.Histoire,
+            titre: plan.progression.histoire.type,
+            contenu: histoire,
+            couleur: MEMO_COLORS.histoire
+        });
+
+        // Generate concepts
+        termcolor.blue('💡 Generating concepts...');
+        for (const [index, concept] of plan.progression.concepts.entries()) {
+            const conceptContent = await generateConcept({
+                ...context,
+                conceptIndex: index + 1,
+                totalConcepts: plan.progression.concepts.length,
+                conceptFocus: concept.focus
             });
-
-            if (progress < 1) {
-                requestAnimationFrame(animate);
-            } else {
-                onProgress(section);
-                resolve();
-            }
-        };
-
-        requestAnimationFrame(animate);
-    });
-};
-
-// Ajouter après la classe AIService
-class MemoPlanner {
-    async createPlan(topic: string, context: MemoContext): Promise<any> {
-        const planningMessages = [
-            { role: 'system' as const, content: memoPlannerPrompt(context) },
-            { role: 'user' as const, content: topic }
-        ];
-        const planCompletion = await generateCompletion(planningMessages);
-        return JSON.parse(planCompletion);
-    }
-}
-
-// Créer une instance unique du planificateur
-const plannerInstance = new MemoPlanner();
-
-// Génère un mémo complet avec toutes ses sections
-export const generateMemo = async (topic: string): Promise<Memo> => {
-    try {
-        const uri = process.env.MONGODB_URI || "mongodb+srv://joshua87000:Joshua87@gene.uxnovlm.mongodb.net/Memo?retryWrites=true&w=majority";
-        const client = new MongoClient(uri, { serverSelectionTimeoutMS: 5000 });
-        const db = client.db('Memo'); // Nom de la base de données
-        const collection = db.collection('MemoCreated'); // Nom de la collection
-
-        // Étape 1 : Vérifier si un mémo existe déjà pour cet ID (où id == topic)
-        const existingMemo = await collection.findOne({ id: topic });
-
-        if (existingMemo) {
-            console.log(`Mémo existant trouvé pour l'ID : ${topic}`);
-            return convertToMemo(existingMemo);
+            sections.push({
+                type: SectionType.Concept,
+                titre: concept.titre,
+                contenu: conceptContent,
+                couleur: MEMO_COLORS.concept
+            });
         }
 
-        // Étape 2 : Si aucun mémo existant, générer un nouveau mémo
-        console.log(`Aucun mémo trouvé pour l'ID : ${topic}, génération d'un nouveau mémo...`);
+        // Generate technique
+        termcolor.blue('🛠️ Generating technique...');
+        const technique = await generateTechnique({
+            ...context,
+            techniqueApproche: plan.progression.technique.approche
+        });
+        sections.push({
+            type: SectionType.Technique,
+            titre: plan.progression.technique.titre,
+            contenu: technique,
+            couleur: MEMO_COLORS.technique
+        });
 
-        const memoId = uuidv4();
-        const baseContext: MemoContext = {
-            topic,
-            objective: topic
-        };
+        // Generate atelier
+        termcolor.blue('🎨 Generating atelier...');
+        const atelier = await generateAtelier({
+            ...context,
+            atelierType: plan.progression.atelier.type
+        });
+        sections.push({
+            type: SectionType.Atelier,
+            titre: plan.progression.atelier.titre,
+            contenu: atelier,
+            couleur: MEMO_COLORS.atelier,
+            duree: parseDuration(plan.progression.atelier.durée)
+        });
 
-        // 1. Obtenir le sujet raffiné
-        const subjectSection = await generateSection(topic, sujetPrompt, SectionType.Sujet, baseContext);
-        const parsedSubject = parseSubject(subjectSection.contenu);
+        termcolor.green('✓ All sections generated');
 
-        // 2. Générer le plan du mémo
-        const memoPlan = await plannerInstance.createPlan(topic, baseContext);
-
-        // 3. Générer toutes les sections en parallèle avec le contexte enrichi
-        const enrichedContext = {
-            ...baseContext,
-            subject: parsedSubject,
-            plan: memoPlan.progression
-        };
-
-        const [
-            objectifSection,
-            accrocheSection,
-            histoireSection,
-            ...conceptSections
-        ] = await Promise.all([
-            generateSection(topic, objectifPrompt, SectionType.Objectif, {
-                ...enrichedContext
-            }),
-            generateSection(topic, accrochePrompt, SectionType.Accroche, {
-                ...enrichedContext,
-                accrocheAngle: memoPlan.progression.accroche
-            }),
-            generateSection(topic, histoirePrompt, SectionType.Histoire, {
-                ...enrichedContext,
-                histoireType: memoPlan.progression.histoire
-            }),
-            ...memoPlan.progression.concepts.flatMap((concept: any, index: number) => [
-                generateSection(topic, conceptPrompt, SectionType.Concept, {
-                    ...enrichedContext,
-                    conceptFocus: concept.focus,
-                    conceptIndex: index + 1,
-                    totalConcepts: memoPlan.progression.concepts.length
-                }),
-                generateSection(topic, exemplePrompt, SectionType.Exemple, {
-                    ...enrichedContext,
-                    exempleFocus: concept.exemple,
-                    conceptIndex: index + 1
-                })
-            ])
-        ]);
-
-        // Générer la technique et l'atelier après les concepts
-        const [techniqueSection, atelierSection] = await Promise.all([
-            generateSection(topic, techniquePrompt, SectionType.Technique, {
-                ...enrichedContext,
-                techniqueApproche: memoPlan.progression.technique
-            }),
-            generateSection(topic, atelierPrompt, SectionType.Atelier, {
-                ...enrichedContext,
-                atelierType: memoPlan.progression.atelier
-            })
-        ]);
-
-        // Assembler les sections dans un ordre optimal
-        const sections = [
-            objectifSection,
-            accrocheSection,
-            histoireSection,
-            ...conceptSections,
-            techniqueSection,
-            atelierSection,
-            {
-                type: SectionType.Feedback,
-                contenu: '',
-                couleur: MEMO_COLORS.feedback,
-            },
-        ].filter(Boolean);
-
-        // Création du mémo
+        // 4. Create the final memo structure
         const memo: Memo = {
-            id: memoId,
+            id: `memo-${Date.now()}`,
+            user_id: 'anonymous',
+            content,
+            book_id: 'default',
+            created_at: new Date().toISOString(),
             sections,
             metadata: {
-                createdAt: new Date().toISOString(),
-                topic,
-                subject: parsedSubject,
-            },
+                topic: content,
+                subject: undefined,
+            }
         };
-
-        // Sauvegarder le mémo dans la base
-        const insertedId = await saveMemoToDatabase(memo);
-        console.log(`Nouveau mémo enregistré avec l'ID : ${insertedId}`);
 
         return memo;
     } catch (error) {
-        console.error('Erreur lors de la génération du mémo:', error);
-        throw error;
+        logger.error('Error generating memo:', error);
+        if (error instanceof OpenAIError) {
+            throw error;
+        }
+        throw new OpenAIError('Failed to generate memo', { originalError: error });
     }
-};
+}
 
-const parseSubject = (content: string): string => {
+async function generateObjective(content: string): Promise<string> {
     try {
-        const parsed = JSON.parse(content);
-        return parsed.sujet || content;
+        const context: MemoContext = {
+            topic: content,
+            objective: ''
+        };
+
+        const response = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: [
+                { role: 'system', content: objectifPrompt(context) },
+                { role: 'user', content }
+            ],
+            temperature: 0.7
+        });
+
+        const objective = response.choices[0]?.message?.content;
+        if (!objective) {
+            throw new ValidationError('No objective generated');
+        }
+
+        const parsed = parseAIResponse(objective);
+        return parsed.contenu;
     } catch (error) {
-        console.error('Erreur lors du parsing du sujet:', error);
-        return content;
+        logger.error('Error generating objective:', error);
+        throw new OpenAIError('Failed to generate objective', { originalError: error });
     }
-};
+}
+
+async function generatePlan(context: MemoContext): Promise<any> {
+    try {
+        const response = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: [
+                { role: 'system', content: memoPlanner(context) },
+                { role: 'user', content: context.topic }
+            ],
+            temperature: 0.7
+        });
+
+        const planText = response.choices[0]?.message?.content;
+        if (!planText) {
+            throw new ValidationError('No plan generated');
+        }
+
+        try {
+            return JSON.parse(planText);
+        } catch (error) {
+            throw new ValidationError('Invalid plan format', { planText });
+        }
+    } catch (error) {
+        logger.error('Error generating plan:', error);
+        throw new OpenAIError('Failed to generate plan', { originalError: error });
+    }
+}
+
+async function generateAccroche(context: MemoContext): Promise<string> {
+    try {
+        const response = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: [
+                { role: 'system', content: accrochePrompt(context) },
+                { role: 'user', content: context.topic }
+            ],
+            temperature: 0.7
+        });
+
+        const accroche = response.choices[0]?.message?.content;
+        if (!accroche) {
+            throw new ValidationError('No accroche generated');
+        }
+
+        const parsed = parseAIResponse(accroche);
+        return parsed.contenu;
+    } catch (error) {
+        logger.error('Error generating accroche:', error);
+        throw new OpenAIError('Failed to generate accroche', { originalError: error });
+    }
+}
+
+async function generateHistoire(context: MemoContext): Promise<string> {
+    try {
+        const response = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: [
+                { role: 'system', content: histoirePrompt(context) },
+                { role: 'user', content: context.topic }
+            ],
+            temperature: 0.7
+        });
+
+        const histoire = response.choices[0]?.message?.content;
+        if (!histoire) {
+            throw new ValidationError('No histoire generated');
+        }
+
+        const parsed = parseAIResponse(histoire);
+        return parsed.contenu;
+    } catch (error) {
+        logger.error('Error generating histoire:', error);
+        throw new OpenAIError('Failed to generate histoire', { originalError: error });
+    }
+}
+
+async function generateConcept(context: MemoContext): Promise<string> {
+    try {
+        const response = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: [
+                { role: 'system', content: `${context.conceptFocus}\n\nGenerate a concept explanation.` },
+                { role: 'user', content: context.topic }
+            ],
+            temperature: 0.7
+        });
+
+        const concept = response.choices[0]?.message?.content;
+        if (!concept) {
+            throw new ValidationError('No concept generated');
+        }
+
+        const parsed = parseAIResponse(concept);
+        return parsed.contenu;
+    } catch (error) {
+        logger.error('Error generating concept:', error);
+        throw new OpenAIError('Failed to generate concept', { originalError: error });
+    }
+}
+
+async function generateTechnique(context: MemoContext): Promise<string> {
+    try {
+        const response = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: [
+                { role: 'system', content: techniquePrompt(context) },
+                { role: 'user', content: context.topic }
+            ],
+            temperature: 0.7
+        });
+
+        const technique = response.choices[0]?.message?.content;
+        if (!technique) {
+            throw new ValidationError('No technique generated');
+        }
+
+        const parsed = parseAIResponse(technique);
+        return parsed.contenu;
+    } catch (error) {
+        logger.error('Error generating technique:', error);
+        throw new OpenAIError('Failed to generate technique', { originalError: error });
+    }
+}
+
+async function generateAtelier(context: MemoContext): Promise<string> {
+    try {
+        const response = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: [
+                { role: 'system', content: atelierPrompt(context) },
+                { role: 'user', content: context.topic }
+            ],
+            temperature: 0.7
+        });
+
+        const atelier = response.choices[0]?.message?.content;
+        if (!atelier) {
+            throw new ValidationError('No atelier generated');
+        }
+
+        const parsed = parseAIResponse(atelier);
+        return parsed.contenu;
+    } catch (error) {
+        logger.error('Error generating atelier:', error);
+        throw new OpenAIError('Failed to generate atelier', { originalError: error });
+    }
+}
+
+function parseDuration(durationStr: string): { value: number; unit: 'min' | 'h' | 'j' } | undefined {
+    try {
+        const match = durationStr.match(/(\d+)\s*(min|h|j)/i);
+        if (!match) return undefined;
+
+        const [, valueStr, unit] = match;
+        const value = parseInt(valueStr, 10);
+
+        if (isNaN(value)) return undefined;
+
+        return {
+            value,
+            unit: unit.toLowerCase() as 'min' | 'h' | 'j'
+        };
+    } catch {
+        return undefined;
+    }
+}

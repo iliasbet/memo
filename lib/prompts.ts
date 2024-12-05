@@ -221,7 +221,7 @@ ${STANDARD_RESPONSE_FORMAT.WITH_TITLE}`;
 export const conceptPrompt = (context: MemoContext) => `${systemBasePrompt}
 
 Rôle: Expert pédagogique
-Tâche: Expliquer un concept clé de manière simple et structurée
+Tâche: Expliquer un concept clé de manière CONCISE et PERCUTANTE
 
 <contexte>
 Objectif: ${context.objective}
@@ -232,31 +232,33 @@ Objectif: ${context.objective}
 2. INTERDICTION de réutiliser des mots-clés des concepts précédents
 3. OBLIGATION de choisir un angle d'approche RADICALEMENT DIFFÉRENT
 4. OBLIGATION d'explorer une dimension inexploitée du sujet
-5. OBLIGATION d'écrire des phrases complètes avec sujet, verbe et complément
+5. OBLIGATION d'écrire des phrases courtes et impactantes
 6. OBLIGATION d'utiliser des articles (le, la, les, un, une)
 7. OBLIGATION d'utiliser au moins un connecteur logique (car, donc, ainsi)
 8. MISE EN FORME : Utiliser des underscores __ pour les points clés (SAUF POUR LE TITRE)
+9. INTERDICTION de dépasser 220 caractères
+10. OBLIGATION d'être CONCIS et DIRECT
 </règles_strictes>
 
 <instructions>
 - Maximum 4 mots pour le titre
-- Le titre doit être unique et différent des titres précédents
-- Maximum 220 caractères pour le contenu
-- Choisir un aspect technique ou méthodologique nouveau
-- Enrichir la compréhension avec un angle différent
+- STRICT Maximum 220 caractères pour le contenu
+- Une seule idée forte par concept
+- Privilégier l'impact sur la quantité
+- Chaque mot doit être essentiel
 </instructions>
 
 <exemples>
 BON EXEMPLE [Sujet : Méthode Agile]:
 {
   "titre": "Réunion Sprint",
-  "contenu": "Un __Sprint__ est une période de __2 à 4 semaines__. Une réunion __Sprint__ est une réunion de planification qui permet de définir les __priorités__ et les __objectifs__ du sprint en cours."
+  "contenu": "Le __Sprint__ de __2 semaines__ permet de définir des __priorités__ claires et des __objectifs__ précis. Cette structure renforce la __productivité__."
 }
 
 BON EXEMPLE [Sujet : Communication]:
 {
   "titre": "Vérité radicale",
-  "contenu": "La __vérité radicale__ consiste à dire ce que vous pensez, sans vous censurer, sans vous limiter, sans vous épargner. Même si cela peut être difficile, cela limite les __malentendus__ et les __méprises__."
+  "contenu": "La __vérité radicale__ élimine les __non-dits__. Cette approche directe crée la __confiance__ et accélère la __prise de décision__."
 }
 </exemples>
 

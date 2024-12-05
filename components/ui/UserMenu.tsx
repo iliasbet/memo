@@ -66,7 +66,7 @@ const UserMenu = () => {
     return (
         <div ref={menuRef} className="relative z-50">
             <button
-                onClick={() => setIsOpen(!isOpen)}
+                onMouseDown={() => setIsOpen(!isOpen)}
                 className="fixed top-4 right-4 p-2 rounded-full bg-[#1A1A1A] hover:bg-[#252525] transition-colors duration-200"
             >
                 <Menu className="w-6 h-6 text-gray-300" />
@@ -86,14 +86,14 @@ const UserMenu = () => {
                                     <UserInfo />
                                     <div className="border-t border-[#252525] my-2" />
                                     <button
-                                        onClick={handleHomeClick}
+                                        onMouseDown={handleHomeClick}
                                         className="flex items-center w-full px-4 py-2.5 text-sm text-gray-300 hover:bg-[#252525] transition-all duration-200 font-normal"
                                     >
                                         <Home className="w-4 h-4 mr-3" />
                                         Accueil
                                     </button>
                                     <button
-                                        onClick={handleCollectionsClick}
+                                        onMouseDown={handleCollectionsClick}
                                         className="flex items-center w-full px-4 py-2.5 text-sm text-gray-300 hover:bg-[#252525] transition-all duration-200 font-normal"
                                     >
                                         <Folder className="w-4 h-4 mr-3" />
@@ -101,7 +101,7 @@ const UserMenu = () => {
                                     </button>
                                     <div className="border-t border-[#252525] my-2" />
                                     <button
-                                        onClick={handleLogout}
+                                        onMouseDown={handleLogout}
                                         className="flex items-center w-full px-4 py-2.5 text-sm text-gray-300 hover:bg-[#252525] transition-all duration-200 font-normal"
                                     >
                                         <LogOut className="w-4 h-4 mr-3" />
@@ -111,35 +111,35 @@ const UserMenu = () => {
                             ) : (
                                 <>
                                     <button
-                                        onClick={handleHomeClick}
+                                        onMouseDown={handleHomeClick}
                                         className="flex items-center w-full px-4 py-2.5 text-sm text-gray-300 hover:bg-[#252525] transition-all duration-200 font-normal"
                                     >
                                         <Home className="w-4 h-4 mr-3" />
                                         Accueil
                                     </button>
                                     <button
-                                        onClick={() => handleAuthClick('signin')}
+                                        onMouseDown={() => handleAuthClick('signin')}
                                         className="flex items-center w-full px-4 py-2.5 text-sm text-gray-300 hover:bg-[#252525] transition-all duration-200 font-normal"
                                     >
                                         <LogIn className="w-4 h-4 mr-3" />
                                         Se connecter
                                     </button>
                                     <button
-                                        onClick={() => handleAuthClick('signup')}
+                                        onMouseDown={() => handleAuthClick('signup')}
                                         className="flex items-center w-full px-4 py-2.5 text-sm text-gray-300 hover:bg-[#252525] transition-all duration-200 font-normal"
                                     >
                                         <UserPlus className="w-4 h-4 mr-3" />
                                         S'inscrire
                                     </button>
                                     <button
-                                        onClick={handleCollectionsClick}
+                                        onMouseDown={handleCollectionsClick}
                                         className="flex items-center w-full px-4 py-2.5 text-sm text-gray-300 hover:bg-[#252525] transition-all duration-200 font-normal"
                                     >
                                         <Folder className="w-4 h-4 mr-3" />
                                         Collections
                                     </button>
                                     <button
-                                        onClick={() => setShowProModal(true)}
+                                        onMouseDown={() => setShowProModal(true)}
                                         className="flex items-center w-full px-4 py-2.5 text-sm text-yellow-500 hover:bg-[#252525] transition-all duration-200 font-normal"
                                     >
                                         <Sparkles className="w-4 h-4 mr-3" />

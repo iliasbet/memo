@@ -1,5 +1,6 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
+import { AuthError } from '@/lib/errors';
 
 // Type pour les variables d'environnement requises
 type RequiredEnvVars = {
@@ -45,4 +46,15 @@ if (!getApps().length) {
 
 const adminAuth = getAuth(adminApp);
 
-export { adminAuth };
+export async function verifyAuth(token: string) {
+    if (!token) {
+        throw new AuthError('No token provided');
+    }
+
+    try {
+        return await adminAuth.verifyIdToken(token);
+    } catch (error) {
+        console.error('Error verifying auth token:', error);
+        throw new AuthError('Invalid token');
+    }
+}

@@ -192,7 +192,10 @@ const Input = forwardRef<HTMLTextAreaElement, InputProps>(({
           }}
         />
         <motion.button
-          type="submit"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            handleSubmit(e);
+          }}
           disabled={isLoading}
           initial="idle"
           animate={

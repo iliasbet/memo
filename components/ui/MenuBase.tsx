@@ -18,7 +18,7 @@ interface MenuBaseProps {
 
 export const MenuItem = ({ icon, label, onClick, className, disabled }: MenuItemProps) => (
     <button
-        onClick={onClick}
+        onMouseDown={onClick}
         disabled={disabled}
         className={cn(
             "flex items-center w-full px-4 py-2.5 text-sm text-gray-300",

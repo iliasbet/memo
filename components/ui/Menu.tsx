@@ -55,7 +55,7 @@ const Menu = ({ onOpenAuthModal, onOpenProModal }: MenuProps) => {
     return (
         <div className="fixed top-4 right-4 z-50">
             <button
-                onClick={() => setIsOpen(!isOpen)}
+                onMouseDown={() => setIsOpen(!isOpen)}
                 className="p-2 rounded-full bg-[#1A1A1A] hover:bg-[#252525] transition-colors duration-200"
                 aria-label="Menu"
             >

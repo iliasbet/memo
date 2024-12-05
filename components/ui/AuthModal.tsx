@@ -188,7 +188,7 @@ export const AuthModal = ({ isOpen, onCloseAction, mode, onModeChangeAction }: A
                                                         />
                                                         <button
                                                             type="button"
-                                                            onClick={() => setShowPassword(!showPassword)}
+                                                            onMouseDown={() => setShowPassword(!showPassword)}
                                                             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
                                                         >
                                                             {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -227,7 +227,7 @@ export const AuthModal = ({ isOpen, onCloseAction, mode, onModeChangeAction }: A
                                         <div className="space-y-3">
                                             <button
                                                 type="button"
-                                                onClick={() => signInWithGoogle?.()}
+                                                onMouseDown={() => signInWithGoogle?.()}
                                                 className="w-full p-3 rounded-2xl bg-[#252525] hover:bg-[#2A2A2A] transition-colors flex items-center justify-center gap-3"
                                             >
                                                 <img src="/google.svg" alt="Google" className="w-5 h-5" />
@@ -236,7 +236,7 @@ export const AuthModal = ({ isOpen, onCloseAction, mode, onModeChangeAction }: A
 
                                             <button
                                                 type="button"
-                                                onClick={() => signInWithMicrosoft?.()}
+                                                onMouseDown={() => signInWithMicrosoft?.()}
                                                 className="w-full p-3 rounded-2xl bg-[#252525] hover:bg-[#2A2A2A] transition-colors flex items-center justify-center gap-3"
                                             >
                                                 <img src="/microsoft.svg" alt="Microsoft" className="w-5 h-5" />
@@ -246,9 +246,9 @@ export const AuthModal = ({ isOpen, onCloseAction, mode, onModeChangeAction }: A
 
                                         <p className="text-center text-sm text-gray-500">
                                             {mode === 'signin' ? (
-                                                <>Vous n'avez pas de compte ? <button onClick={() => onModeChangeAction('signup')} className="text-blue-500 hover:text-blue-400">S'inscrire</button></>
+                                                <>Vous n'avez pas de compte ? <button onMouseDown={() => onModeChangeAction('signup')} className="text-blue-500 hover:text-blue-400">S'inscrire</button></>
                                             ) : (
-                                                <>Vous avez djà un compte ? <button onClick={() => onModeChangeAction('signin')} className="text-blue-500 hover:text-blue-400">Connexion</button></>
+                                                <>Vous avez djà un compte ? <button onMouseDown={() => onModeChangeAction('signin')} className="text-blue-500 hover:text-blue-400">Connexion</button></>
                                             )}
                                         </p>
                                     </div>

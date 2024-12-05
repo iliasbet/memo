@@ -25,20 +25,20 @@ export const MemoList: React.FC<MemoListProps> = memo(
         const [direction, setDirection] = useState(0);
         const [isRewinding, setIsRewinding] = useState(false);
         const [isRetrying, setIsRetrying] = useState(false);
-        const [currentMemo, setCurrentMemo] = useState(memos[0]);
+        const [currentMemo, setCurrentMemo] = useState<Memo | null>(memos[0] || null);
         const sections = currentMemo?.sections || [];
 
         const allSections = currentMemo
             ? [
-                { type: 'cover', content: currentMemo.metadata.topic, coverImage: currentMemo.metadata.coverImage },
+                { type: 'cover' as const, content: currentMemo.metadata?.topic || currentMemo.content || 'No Content', coverImage: currentMemo.metadata?.coverImage },
                 ...sections,
             ]
             : [];
 
-        const isLastSection = currentIndex === sections.length;
+        const isLastSection = currentIndex === allSections.length - 1;
 
         useEffect(() => {
-            setCurrentMemo(memos[0]);
+            setCurrentMemo(memos[0] || null);
             setCurrentIndex(0);
             setDirection(0);
             setIsRewinding(false);
@@ -91,7 +91,7 @@ export const MemoList: React.FC<MemoListProps> = memo(
             return (
                 <div className="w-full min-h-[400px] relative">
                     <div className="absolute inset-0">
-                        <LoadingCard />
+                        <LoadingCard content={currentStreamingContent || undefined} />
                     </div>
                 </div>
             );
@@ -114,8 +114,8 @@ export const MemoList: React.FC<MemoListProps> = memo(
                                 {currentIndex === 0 ? (
                                     <CoverCard
                                         key="cover"
-                                        topic={currentMemo?.metadata.topic || ''}
-                                        subject={currentMemo?.metadata.subject}
+                                        topic={currentMemo.metadata?.topic || currentMemo.content || ''}
+                                        subject={currentMemo.metadata?.subject}
                                         isLoading={isLoading || isRetrying}
                                     />
                                 ) : (
@@ -130,8 +130,8 @@ export const MemoList: React.FC<MemoListProps> = memo(
                                             isActive={true}
                                             isLastSection={isLastSection}
                                             direction={direction}
-                                            topic={currentMemo?.metadata.topic}
-                                            idMemo={currentMemo?.id}
+                                            topic={currentMemo.metadata?.topic}
+                                            idMemo={currentMemo.id}
                                         />
                                     )
                                 )}
@@ -140,31 +140,28 @@ export const MemoList: React.FC<MemoListProps> = memo(
 
                         {allSections.length > 1 && (
                             <>
-                                {currentIndex > 0 && (
-                                    <button
-                                        onClick={handlePrevious}
-                                        className="absolute left-[-48px] top-1/2 transform -translate-y-1/2"
-                                        aria-label="Section précédente"
-                                        disabled={isRewinding}
-                                    >
-                                        <ChevronLeft className="w-8 h-8 text-gray-400 hover:text-white transition-colors" />
-                                    </button>
-                                )}
+                                <button
+                                    onClick={handlePrevious}
+                                    className={`absolute left-[-48px] top-1/2 transform -translate-y-1/2 ${currentIndex === 0 ? 'opacity-0 pointer-events-none' : 'opacity-100'
+                                        }`}
+                                    aria-label="Section précédente"
+                                    disabled={isRewinding || currentIndex === 0}
+                                >
+                                    <ChevronLeft className="w-8 h-8 text-gray-400 hover:text-white transition-colors" />
+                                </button>
 
-                                {currentIndex < allSections.length && (
-                                    <button
-                                        onClick={handleNext}
-                                        className="absolute right-[-48px] top-1/2 transform -translate-y-1/2"
-                                        aria-label={isLastSection ? 'Recommencer' : 'Section suivante'}
-                                        disabled={isRewinding}
-                                    >
-                                        {isLastSection ? (
-                                            <RotateCw className="w-8 h-8 text-gray-400 hover:text-white transition-colors" />
-                                        ) : (
-                                            <ChevronRight className="w-8 h-8 text-gray-400 hover:text-white transition-colors" />
-                                        )}
-                                    </button>
-                                )}
+                                <button
+                                    onClick={handleNext}
+                                    className="absolute right-[-48px] top-1/2 transform -translate-y-1/2"
+                                    aria-label={isLastSection ? 'Recommencer' : 'Section suivante'}
+                                    disabled={isRewinding}
+                                >
+                                    {isLastSection ? (
+                                        <RotateCw className="w-8 h-8 text-gray-400 hover:text-white transition-colors" />
+                                    ) : (
+                                        <ChevronRight className="w-8 h-8 text-gray-400 hover:text-white transition-colors" />
+                                    )}
+                                </button>
                             </>
                         )}
                     </div>

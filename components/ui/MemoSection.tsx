@@ -1,7 +1,6 @@
 import React, { memo } from 'react';
 import { MemoSectionProps, Duration, SectionType } from '@/types';
 import { LoadingCard } from './LoadingCard';
-import { FeedbackCard } from './FeedbackCard';
 import { motion } from 'framer-motion';
 
 interface ExtendedMemoSectionProps extends Omit<MemoSectionProps, 'duration'> {
@@ -100,30 +99,6 @@ export const MemoSection: React.FC<ExtendedMemoSectionProps> = memo(({ type, con
                     {type === SectionType.Atelier && duration && (
                         <div className="absolute bottom-10 left-0 right-0 text-sm opacity-40">
                             Durée : {formatDuration(duration)}
-                        </div>
-                    )}
-
-                    {isLastSection && (
-                        <div className="absolute bottom-0 left-0 right-0 bg-black/20 backdrop-blur-sm p-6 rounded-b-2xl border-t border-white/10">
-                            <FeedbackCard
-                                onSubmit={async (feedback) => {
-                                    const response = await fetch('/api/feedback', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({
-                                            feedback,
-                                            memoRequest: topic,
-                                            idMemo,
-                                        }),
-                                    });
-
-                                    if (!response.ok) {
-                                        throw new Error('Erreur lors de l\'envoi du feedback');
-                                    }
-                                }}
-                                memoRequest={topic}
-                                idMemo={idMemo}
-                            />
                         </div>
                     )}
                 </div>

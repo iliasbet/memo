@@ -63,6 +63,7 @@ export const ProModal = ({ isOpen, onCloseAction }: ProModalProps) => {
                                         </div>
 
                                         <button
+                                            onMouseDown={() => {/* Add your pro subscription logic here */ }}
                                             className="w-full p-3 rounded-2xl bg-blue-600 text-white font-normal hover:bg-blue-500 transition-colors flex items-center justify-center gap-2"
                                         >
                                             <Sparkles className="w-4 h-4" />

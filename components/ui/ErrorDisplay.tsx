@@ -36,14 +36,14 @@ export const ErrorDisplay: React.FC<ErrorDisplayProps> = React.memo(({ error, on
             <div className="flex items-center gap-2 ml-auto">
               {onRetry && (
                 <button
-                  onClick={onRetry}
+                  onMouseDown={onRetry}
                   className="text-blue-500 hover:text-blue-400 transition-all duration-200"
                 >
                   Réessayer
                 </button>
               )}
               <button
-                onClick={onClose}
+                onMouseDown={onClose}
                 className="text-gray-400 hover:text-gray-300 transition-all duration-200"
               >
                 <X className="w-4 h-4" />

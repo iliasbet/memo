@@ -1,33 +1,21 @@
-// Configuration Tailwind CSS pour l'application Memo
-// Définit les styles, thèmes et extensions personnalisés
-
 import type { Config } from "tailwindcss";
 import { MEMO_COLORS } from "./constants/colors";
 
 const config: Config = {
-  // Mode sombre activé
   darkMode: 'class',
-
-  // Fichiers à scanner pour les classes Tailwind
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
-
-  // Classes à toujours inclure
   safelist: ['animate-light-bounce'],
-
-  // Extension du thème par défaut
   theme: {
     extend: {
-      // Configuration des rayons de bordure
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
       },
-      // Palette de couleurs personnalisée
       colors: {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',

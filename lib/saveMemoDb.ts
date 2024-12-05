@@ -1,28 +1,133 @@
-import { MongoClient } from 'mongodb';
-import { Memo } from '@/types'; // Assurez-vous que ce type existe ou remplacez-le par un objet générique
+import { supabase } from './supabase/client'
+import { logger } from './logger'
+import type { Memo, MemoInput, MemoResponse, DatabaseMemo } from '@/types/memo'
+import { PostgrestError } from '@supabase/supabase-js'
 
-const uri = process.env.MONGODB_URI || "mongodb+srv://joshua87000:Joshua87@gene.uxnovlm.mongodb.net/Memo?retryWrites=true&w=majority";
+export class SupabaseError extends Error {
+    constructor(
+        message: string,
+        public readonly supabaseError: PostgrestError | null,
+        public readonly context?: any
+    ) {
+        super(message);
+        this.name = 'SupabaseError';
+    }
+}
 
-export async function saveMemoToDatabase(memo: Memo): Promise<string> {
-    const client = new MongoClient(uri, { serverSelectionTimeoutMS: 5000 });
-
+export async function saveMemoToDb(input: MemoInput): Promise<MemoResponse> {
     try {
-        console.log("Tentative de connexion à MongoDB...");
-        await client.connect(); // Établit la connexion
-        console.log("Connexion réussie à MongoDB.");
+        logger.info('Attempting to save memo:', {
+            ...input,
+            content: input.content.substring(0, 50) + '...'
+        });
 
-        const db = client.db('Memo'); // Nom de la base de données
-        const collection = db.collection('MemoCreated'); // Nom de la collection
+        // Test connection first
+        const { data: testData, error: testError } = await supabase
+            .from('memos')
+            .select('count')
+            .limit(1);
 
-        const result = await collection.insertOne(memo); // Insère le mémo
-        console.log("Mémo sauvegardé avec succès :", result.insertedId);
+        if (testError) {
+            logger.error('Supabase connection test failed:', testError);
+            throw new SupabaseError('Failed to connect to database', testError, null);
+        }
 
-        return result.insertedId.toString(); // Retourne l'ID inséré
+        logger.info('Supabase connection test successful');
+
+        const { data, error } = await supabase
+            .from('memos')
+            .insert([
+                {
+                    user_id: input.userId,
+                    content: input.content,
+                    book_id: input.bookId,
+                    chapter_id: input.chapterId,
+                    created_at: new Date().toISOString()
+                }
+            ])
+            .select()
+            .single();
+
+        if (error) {
+            logger.error('Supabase error details:', {
+                code: error.code,
+                message: error.message,
+                details: error.details,
+                hint: error.hint
+            });
+            throw new SupabaseError('Failed to save memo', error, input);
+        }
+
+        if (!data) {
+            throw new SupabaseError('No data returned from Supabase', null, input);
+        }
+
+        const dbMemo = data as DatabaseMemo;
+        logger.info('Successfully saved memo to Supabase');
+
+        // Convert to client-friendly format
+        return {
+            id: dbMemo.id,
+            userId: dbMemo.user_id,
+            content: dbMemo.content,
+            bookId: dbMemo.book_id,
+            chapterId: dbMemo.chapter_id ?? undefined,
+            createdAt: dbMemo.created_at
+        };
     } catch (error) {
-        console.error('Erreur lors de la sauvegarde du mémo :', error);
-        throw error; // Lève l'erreur pour que l'appelant puisse la gérer
-    } finally {
-        await client.close(); // Ferme la connexion après l'opération
-        console.log("Connexion MongoDB fermée.");
+        if (error instanceof SupabaseError) {
+            throw error;
+        }
+
+        logger.error('Unexpected error saving memo to Supabase:', {
+            error,
+            input: {
+                ...input,
+                content: input.content.substring(0, 50) + '...'
+            }
+        });
+        throw new SupabaseError(
+            'Unexpected error saving memo',
+            null,
+            { originalError: error, input }
+        );
+    }
+}
+
+export async function getMemosByUserId(userId: string): Promise<MemoResponse[]> {
+    try {
+        const { data, error } = await supabase
+            .from('memos')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            throw new SupabaseError('Failed to fetch memos', error, { userId });
+        }
+
+        if (!data) {
+            return [];
+        }
+
+        return data.map((dbMemo: DatabaseMemo) => ({
+            id: dbMemo.id,
+            userId: dbMemo.user_id,
+            content: dbMemo.content,
+            bookId: dbMemo.book_id,
+            chapterId: dbMemo.chapter_id ?? undefined,
+            createdAt: dbMemo.created_at
+        }));
+    } catch (error) {
+        if (error instanceof SupabaseError) {
+            throw error;
+        }
+
+        logger.error('Error fetching memos from Supabase:', error);
+        throw new SupabaseError(
+            'Unexpected error fetching memos',
+            null,
+            { originalError: error, userId }
+        );
     }
 }

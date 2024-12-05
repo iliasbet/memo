@@ -1,5 +1,3 @@
-// Définition des types principaux pour l'app
-// Énumération des différentes sections possibles d'un mémo
 export enum SectionType {
     Objectif = 'objectif',
     Accroche = 'accroche',
@@ -7,14 +5,12 @@ export enum SectionType {
     Histoire = 'histoire',
     Technique = 'technique',
     Atelier = 'atelier',
-    Feedback = 'feedback',
     Sujet = 'sujet',
     Exemple = 'exemple',
     Definition = 'definition',
     Methode = 'methode'
 }
 
-// Structure d'une section de mémo
 export interface Duration {
     value: number;
     unit: 'min' | 'h' | 'j';
@@ -28,19 +24,23 @@ export interface MemoSection {
     readonly duree?: Duration;
 }
 
-// Structure complète d'un mémo
 export interface Memo {
     id: string;
+    user_id: string;
+    content: string;
+    book_id: string;
+    chapter_id?: string;
+    created_at: string;
     sections: MemoSection[];
     metadata: {
-        createdAt: string;
-        topic: string;
+        topic?: string;
         subject?: string;
         coverImage?: string;
+        title?: string;
+        description?: string;
     };
 }
 
-// Props pour le composant MemoSection
 export interface MemoSectionProps {
     type: SectionType;
     content: string;
@@ -54,13 +54,11 @@ export interface MemoSectionProps {
     idMemo?: string;
 }
 
-// Structure pour grouper les idées
 export interface IdeaGroup {
     mainIdea: string;
     followUpIdeas: string[];
 }
 
-// Contexte global pour la génération de mémo
 export interface MemoContext {
     topic: string;
     objective: string;
@@ -85,8 +83,6 @@ export interface MemoContext {
     atelierType?: string;
 }
 
-// Ajouter après les types existants
-
 export interface Collection {
     id: string;
     name: string;
@@ -104,20 +100,11 @@ export interface CollectionFolder {
     createdAt: string;
 }
 
-export interface Feedback {
-    id: string;
-    content: string;
-    userId?: string;
-    createdAt: Date;
-    userAgent?: string;
-}
-
 export interface ExtendedMemoSectionProps extends MemoSectionProps {
     isLastSection?: boolean;
     direction?: number;
 }
 
-// Ajouter après MemoContext
 export interface SectionPlan {
     concept: string;
     histoire: string;

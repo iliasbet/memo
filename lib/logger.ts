@@ -1,58 +1,40 @@
-export enum LogLevel {
-  INFO = 'INFO',
-  WARN = 'WARN',
-  ERROR = 'ERROR'
-}
+// ANSI escape codes for colors
+const colors = {
+  reset: "\x1b[0m",
+  blue: "\x1b[34m",
+  green: "\x1b[32m",
+  red: "\x1b[31m",
+  yellow: "\x1b[33m"
+} as const;
 
-interface LogMessage {
-  level: LogLevel;
-  message: string;
-  data?: unknown;
-  timestamp: string;
-}
-
-export class Logger {
-  private static logs: LogMessage[] = [];
-  private static maxLogs = 100;
-
-  static log(level: LogLevel, message: string, data?: unknown) {
-    const logMessage: LogMessage = {
-      level,
-      message,
-      data,
-      timestamp: new Date().toISOString()
-    };
-
-    this.logs.push(logMessage);
-
-    // Garder seulement les derniers logs
-    if (this.logs.length > this.maxLogs) {
-      this.logs = this.logs.slice(-this.maxLogs);
-    }
-
-    // En développement, on affiche aussi dans la console
-    if (process.env.NODE_ENV === 'development') {
-      switch (level) {
-        case LogLevel.INFO:
-          console.info(`[${level}] ${message}`, data);
-          break;
-        case LogLevel.WARN:
-          console.warn(`[${level}] ${message}`, data);
-          break;
-        case LogLevel.ERROR:
-          console.error(`[${level}] ${message}`, data);
-          break;
-        default:
-          console.log(`[${level}] ${message}`, data);
-      }
-    }
+// Configure colored output
+export const termcolor = {
+  blue: (message: string): void => {
+    console.log(`${colors.blue}${message}${colors.reset}`);
+  },
+  green: (message: string): void => {
+    console.log(`${colors.green}${message}${colors.reset}`);
+  },
+  red: (message: string): void => {
+    console.log(`${colors.red}${message}${colors.reset}`);
+  },
+  yellow: (message: string): void => {
+    console.log(`${colors.yellow}${message}${colors.reset}`);
   }
+} as const;
 
-  static getLogs(): LogMessage[] {
-    return [...this.logs];
+// Basic logger implementation with colored prefixes
+export const logger = {
+  info: (message: string, context?: unknown): void => {
+    console.log(`${colors.blue}[INFO]${colors.reset} ${message}`, context ?? '');
+  },
+  error: (message: string, error?: unknown): void => {
+    console.error(`${colors.red}[ERROR]${colors.reset} ${message}`, error ?? '');
+  },
+  warn: (message: string, context?: unknown): void => {
+    console.warn(`${colors.yellow}[WARN]${colors.reset} ${message}`, context ?? '');
+  },
+  debug: (message: string, context?: unknown): void => {
+    console.debug(`${colors.green}[DEBUG]${colors.reset} ${message}`, context ?? '');
   }
-
-  static clearLogs(): void {
-    this.logs = [];
-  }
-}
+} as const;

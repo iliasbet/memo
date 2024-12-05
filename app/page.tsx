@@ -3,17 +3,14 @@
 // 1. React et Next.js
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
-import { initClarity } from '@/lib/clarity';
 
 // 3. Composants internes
 import { MemoList } from '@/components/ui/MemoList';
 import { Input } from "@/components/ui/Input";
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay';
-import { FeedbackCard } from '@/components/ui/FeedbackCard';
 
 // 4. Types et constantes
 import type { Memo } from '@/types';
-import { MemoError, ErrorCode } from '@/types/errors';
 
 // Page d'accueil de l'application Memo
 // Gère l'interface principale et la saisie du sujet du mémo
@@ -70,9 +67,7 @@ export default function PageAccueil() {
             });
         };
 
-        // Mettre à jour immédiatement au montage
         updateDimensions();
-
         window.addEventListener('resize', updateDimensions);
         window.addEventListener('orientationchange', updateDimensions);
 
@@ -80,10 +75,6 @@ export default function PageAccueil() {
             window.removeEventListener('resize', updateDimensions);
             window.removeEventListener('orientationchange', updateDimensions);
         };
-    }, []);
-
-    useEffect(() => {
-        initClarity();
     }, []);
 
     const handleSubmit = useCallback(async (e?: React.FormEvent) => {
@@ -98,38 +89,29 @@ export default function PageAccueil() {
             const response = await fetch('/api/memos', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content: content.trim() }),
+                body: JSON.stringify({
+                    content: content.trim(),
+                    bookId: 'default'
+                }),
             });
 
+            const data = await response.json();
+
             if (!response.ok) {
-                throw new MemoError(
-                    ErrorCode.API_ERROR,
-                    'Erreur lors de la génération du mémo'
-                );
+                const errorMessage = data.error || 'Error generating memo';
+                const errorDetails = data.details ? `: ${JSON.stringify(data.details)}` : '';
+                throw new Error(`${errorMessage}${errorDetails}`);
             }
 
-            const data = await response.json();
+            setContent('');
             setCurrentMemo(data.memo);
         } catch (error) {
-            setError(error instanceof MemoError ? error.message : 'Une erreur est survenue');
+            console.error('Error submitting memo:', error);
+            setError(error instanceof Error ? error.message : 'An unexpected error occurred');
         } finally {
             setIsLoading(false);
         }
-    }, [content, isLoading]);
-
-    const handleFeedbackSubmit = async (feedback: string) => {
-        const response = await fetch('/api/feedback', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ feedback }),
-        });
-
-        if (!response.ok) {
-            throw new Error('Erreur lors de l\'envoi du feedback');
-        }
-    };
+    }, [content, isLoading, setContent, setCurrentMemo, setError, setIsLoading]);
 
     return (
         <div className="flex flex-col h-screen bg-[#121212] text-white overflow-hidden">
