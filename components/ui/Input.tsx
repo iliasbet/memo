@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Check, Search, Send } from 'lucide-react';
 import type { Memo } from '@/types';
+import { RoundedButton } from './RoundedButton';
+import { useAuthContext } from '@/contexts/AuthContext';
 
 interface InputProps {
   value: string;
@@ -18,6 +20,24 @@ interface InputProps {
   ref?: React.RefObject<HTMLTextAreaElement>;
 }
 
+const SendIcon = () => (
+  <svg
+    width="15"
+    height="15"
+    viewBox="0 0 15 15"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M7.5 1L7.5 14M7.5 1L1.5 7M7.5 1L13.5 7"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 const Input = forwardRef<HTMLTextAreaElement, InputProps>(({
   value,
   onChange,
@@ -29,12 +49,12 @@ const Input = forwardRef<HTMLTextAreaElement, InputProps>(({
 }, ref) => {
   const [isError, setIsError] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
-
+  const [showCollectionModal, setShowCollectionModal] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLFormElement>(null);
+  const { user } = useAuthContext();
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -107,38 +127,6 @@ const Input = forwardRef<HTMLTextAreaElement, InputProps>(({
     }
   };
 
-  // Animation variants pour le bouton
-  const buttonVariants = {
-    idle: {
-      scale: 1,
-      backgroundColor: "#2A2A2A"
-    },
-    hover: {
-      scale: 1.1,
-      backgroundColor: "#3A3A3A",
-      transition: {
-        type: "spring",
-        stiffness: 400,
-        damping: 25
-      }
-    },
-    loading: {
-      rotate: 360,
-      transition: {
-        duration: 1,
-        repeat: Infinity,
-        ease: "linear"
-      }
-    },
-    success: {
-      scale: [1, 1.2, 1],
-      backgroundColor: "#059669",
-      transition: {
-        duration: 0.3
-      }
-    }
-  };
-
   // Synchroniser les refs
   useEffect(() => {
     if (ref && typeof ref === 'object') {
@@ -191,71 +179,17 @@ const Input = forwardRef<HTMLTextAreaElement, InputProps>(({
             maxHeight: '200px',
           }}
         />
-        <motion.button
-          onMouseDown={(e) => {
+        <RoundedButton
+          variant="send"
+          onMouseDown={(e: React.MouseEvent<HTMLButtonElement>) => {
             e.preventDefault();
             handleSubmit(e);
           }}
           disabled={isLoading}
-          initial="idle"
-          animate={
-            isLoading
-              ? "loading"
-              : isSuccess
-                ? "success"
-                : isHovered
-                  ? "hover"
-                  : "idle"
-          }
-          variants={buttonVariants}
-          onHoverStart={() => setIsHovered(true)}
-          onHoverEnd={() => setIsHovered(false)}
-          className={cn(
-            "absolute right-2 top-1.5",
-            "w-9 h-9",
-            "rounded-full",
-            "flex items-center justify-center",
-            "text-gray-300",
-            "disabled:opacity-50",
-            "select-none touch-none",
-            "bg-[#2A2A2A]",
-            "hover:bg-[#3A3A3A]",
-            "transition-colors duration-200"
-          )}
-          style={{ WebkitTapHighlightColor: 'transparent' }}
-        >
-          <AnimatePresence mode="wait">
-            {isLoading ? (
-              <motion.div
-                key="loader"
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.5 }}
-                className="w-4 h-4 rounded-full border-2 border-gray-300 border-t-transparent"
-              />
-            ) : (
-              <motion.svg
-                key="send"
-                width="15"
-                height="15"
-                viewBox="0 0 15 15"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.5 }}
-              >
-                <path
-                  d="M7.5 1L7.5 14M7.5 1L1.5 7M7.5 1L13.5 7"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </motion.svg>
-            )}
-          </AnimatePresence>
-        </motion.button>
+          isLoading={isLoading}
+          className="absolute right-2 top-1.5"
+          icon={<SendIcon />}
+        />
       </motion.div>
     </form>
   );

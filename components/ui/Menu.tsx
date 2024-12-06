@@ -3,6 +3,7 @@ import { Menu as MenuIcon, UserPlus, LogIn, Home, Sparkles } from 'lucide-react'
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { MenuBase } from '@/components/ui/MenuBase';
+import { RoundedButton } from './RoundedButton';
 
 interface MenuProps {
     onOpenAuthModal?: (mode: 'signin' | 'signup') => void;
@@ -54,13 +55,12 @@ const Menu = ({ onOpenAuthModal, onOpenProModal }: MenuProps) => {
 
     return (
         <div className="fixed top-4 right-4 z-50">
-            <button
+            <RoundedButton
+                variant="menu"
                 onMouseDown={() => setIsOpen(!isOpen)}
-                className="p-2 rounded-full bg-[#1A1A1A] hover:bg-[#252525] transition-colors duration-200"
                 aria-label="Menu"
-            >
-                <MenuIcon className="w-6 h-6 text-gray-300" />
-            </button>
+                icon={<MenuIcon className="w-6 h-6" />}
+            />
 
             {isOpen && <MenuBase items={menuItems} />}
         </div>
