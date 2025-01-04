@@ -1,168 +1,76 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Menu, LogIn, UserPlus, X, LogOut, User as UserIcon, Sparkles, Loader2, Folder, Home } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { AuthModal } from './AuthModal';
-import { UserInfo } from './UserInfo';
+import React, { useState } from 'react';
+import { Menu as MenuIcon, UserPlus, LogIn, Home, Sparkles } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { auth } from '@/lib/firebase';
-import { useStripe } from '@/hooks/useStripe';
-import { ProModal } from './ProModal';
 import { useRouter } from 'next/navigation';
+import { MenuBase } from './MenuBase';
+import { RoundedButton } from './RoundedButton';
 
-const UserMenu = () => {
+interface UserMenuProps {
+    onOpenAuthModal?: (mode: 'signin' | 'signup') => void;
+    onOpenProModal?: () => void;
+}
+
+const UserMenu = ({ onOpenAuthModal, onOpenProModal }: UserMenuProps) => {
     const [isOpen, setIsOpen] = useState(false);
-    const [showAuthModal, setShowAuthModal] = useState(false);
-    const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
-    const [showProModal, setShowProModal] = useState(false);
-    const menuRef = useRef<HTMLDivElement>(null);
     const { user } = useAuthContext();
-    const { redirectToCheckout, isLoading } = useStripe();
     const router = useRouter();
 
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+    const menuItems = [
+        {
+            icon: <Home className="w-4 h-4" />,
+            label: 'Accueil',
+            onClick: () => {
+                router.push('/');
                 setIsOpen(false);
             }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    const handleAuthClick = (mode: 'signin' | 'signup') => {
-        setAuthMode(mode);
-        setShowAuthModal(true);
-        setIsOpen(false);
-    };
-
-    const handleLogout = async () => {
-        try {
-            await auth.signOut();
-            setIsOpen(false);
-        } catch (error) {
-            console.error('Erreur lors de la déconnexion:', error);
+        },
+        ...(!user ? [
+            {
+                icon: <LogIn className="w-4 h-4" />,
+                label: 'Se connecter',
+                onClick: () => {
+                    onOpenAuthModal?.('signin');
+                    setIsOpen(false);
+                }
+            },
+            {
+                icon: <UserPlus className="w-4 h-4" />,
+                label: "S'inscrire",
+                onClick: () => {
+                    onOpenAuthModal?.('signup');
+                    setIsOpen(false);
+                }
+            }
+        ] : []),
+        {
+            icon: <Sparkles className="w-4 h-4" />,
+            label: 'Passer à pro',
+            onClick: () => {
+                onOpenProModal?.();
+                setIsOpen(false);
+            },
+            className: 'text-yellow-500'
         }
-    };
-
-    const handleModeChangeAction = (newMode: 'signin' | 'signup') => {
-        setAuthMode(newMode);
-    };
-
-    const handleCollectionsClick = () => {
-        const collectionsSection = document.querySelector('.snap-start:nth-child(2)');
-        collectionsSection?.scrollIntoView({ behavior: 'smooth' });
-        setIsOpen(false);
-    };
-
-    const handleHomeClick = () => {
-        const homeSection = document.querySelector('.snap-start:first-child');
-        homeSection?.scrollIntoView({ behavior: 'smooth' });
-        setIsOpen(false);
-    };
+    ];
 
     return (
-        <div ref={menuRef} className="relative z-50">
-            <button
-                onMouseDown={() => setIsOpen(!isOpen)}
-                className="fixed top-4 right-4 p-2 rounded-full bg-[#1A1A1A] hover:bg-[#252525] transition-colors duration-200"
-            >
-                <Menu className="w-6 h-6 text-gray-300" />
-            </button>
-
-            <AnimatePresence>
+        <div className="fixed top-4 right-4 z-50">
+            <div className="relative">
+                <RoundedButton
+                    variant="menu"
+                    onMouseDown={() => setIsOpen(!isOpen)}
+                    aria-label="Menu"
+                    icon={<MenuIcon className="w-6 h-6" />}
+                    className="w-10 h-10 flex items-center justify-center"
+                />
                 {isOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="fixed top-16 right-4 w-64 bg-[#1A1A1A] rounded-xl shadow-lg overflow-hidden"
-                    >
-                        <div className="py-2">
-                            {user ? (
-                                <>
-                                    <UserInfo />
-                                    <div className="border-t border-[#252525] my-2" />
-                                    <button
-                                        onMouseDown={handleHomeClick}
-                                        className="flex items-center w-full px-4 py-2.5 text-sm text-gray-300 hover:bg-[#252525] transition-all duration-200 font-normal"
-                                    >
-                                        <Home className="w-4 h-4 mr-3" />
-                                        Accueil
-                                    </button>
-                                    <button
-                                        onMouseDown={handleCollectionsClick}
-                                        className="flex items-center w-full px-4 py-2.5 text-sm text-gray-300 hover:bg-[#252525] transition-all duration-200 font-normal"
-                                    >
-                                        <Folder className="w-4 h-4 mr-3" />
-                                        Collections
-                                    </button>
-                                    <div className="border-t border-[#252525] my-2" />
-                                    <button
-                                        onMouseDown={handleLogout}
-                                        className="flex items-center w-full px-4 py-2.5 text-sm text-gray-300 hover:bg-[#252525] transition-all duration-200 font-normal"
-                                    >
-                                        <LogOut className="w-4 h-4 mr-3" />
-                                        Se déconnecter
-                                    </button>
-                                </>
-                            ) : (
-                                <>
-                                    <button
-                                        onMouseDown={handleHomeClick}
-                                        className="flex items-center w-full px-4 py-2.5 text-sm text-gray-300 hover:bg-[#252525] transition-all duration-200 font-normal"
-                                    >
-                                        <Home className="w-4 h-4 mr-3" />
-                                        Accueil
-                                    </button>
-                                    <button
-                                        onMouseDown={() => handleAuthClick('signin')}
-                                        className="flex items-center w-full px-4 py-2.5 text-sm text-gray-300 hover:bg-[#252525] transition-all duration-200 font-normal"
-                                    >
-                                        <LogIn className="w-4 h-4 mr-3" />
-                                        Se connecter
-                                    </button>
-                                    <button
-                                        onMouseDown={() => handleAuthClick('signup')}
-                                        className="flex items-center w-full px-4 py-2.5 text-sm text-gray-300 hover:bg-[#252525] transition-all duration-200 font-normal"
-                                    >
-                                        <UserPlus className="w-4 h-4 mr-3" />
-                                        S'inscrire
-                                    </button>
-                                    <button
-                                        onMouseDown={handleCollectionsClick}
-                                        className="flex items-center w-full px-4 py-2.5 text-sm text-gray-300 hover:bg-[#252525] transition-all duration-200 font-normal"
-                                    >
-                                        <Folder className="w-4 h-4 mr-3" />
-                                        Collections
-                                    </button>
-                                    <button
-                                        onMouseDown={() => setShowProModal(true)}
-                                        className="flex items-center w-full px-4 py-2.5 text-sm text-yellow-500 hover:bg-[#252525] transition-all duration-200 font-normal"
-                                    >
-                                        <Sparkles className="w-4 h-4 mr-3" />
-                                        Passer à pro
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                    </motion.div>
+                    <div className="absolute right-0 pt-2">
+                        <MenuBase items={menuItems} />
+                    </div>
                 )}
-            </AnimatePresence>
-
-            <AuthModal
-                isOpen={showAuthModal}
-                onCloseAction={() => setShowAuthModal(false)}
-                mode={authMode}
-                onModeChangeAction={handleModeChangeAction}
-            />
-
-            <ProModal
-                isOpen={showProModal}
-                onCloseAction={() => setShowProModal(false)}
-            />
+            </div>
         </div>
     );
 };

@@ -1,6 +1,7 @@
-import { Dialog, DialogContent, DialogOverlay, DialogTitle } from '@/components/ui/dialog';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
+'use client';
+
+import { X, Sparkles, Check } from 'lucide-react';
+import { RoundedButton } from './RoundedButton';
 
 interface ProModalProps {
     isOpen: boolean;
@@ -8,74 +9,74 @@ interface ProModalProps {
 }
 
 export const ProModal = ({ isOpen, onCloseAction }: ProModalProps) => {
+    if (!isOpen) return null;
+
+    const features = [
+        "Génération de mémos illimitée",
+        "Accès à tous les styles d'écriture",
+        "Support prioritaire",
+        "Fonctionnalités en avant-première"
+    ];
+
+    const handleSubscribe = async () => {
+        // TODO: Implement Stripe integration
+        console.log('Subscribe clicked');
+    };
+
     return (
-        <Dialog open={isOpen} onOpenChange={onCloseAction}>
-            <AnimatePresence>
-                {isOpen && (
-                    <>
-                        <DialogOverlay asChild>
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 0.3 }}
-                                className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm"
-                            />
-                        </DialogOverlay>
+        <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+            onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                    onCloseAction();
+                }
+            }}
+        >
+            <div className="bg-[#121212] border border-gray-800 p-8 rounded-2xl shadow-xl w-full max-w-md relative">
+                <div className="absolute right-4 top-4">
+                    <RoundedButton
+                        variant="menu"
+                        onClick={onCloseAction}
+                        aria-label="Close"
+                        icon={<X className="w-4 h-4" />}
+                        className="w-8 h-8 flex items-center justify-center hover:bg-gray-800"
+                    />
+                </div>
 
-                        <DialogContent className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-[500px] translate-x-[-50%] translate-y-[-50%] border-none bg-transparent p-0 shadow-lg">
-                            <DialogTitle className="sr-only">Passer à Pro</DialogTitle>
+                <div className="flex items-center space-x-2 mb-6">
+                    <Sparkles className="w-6 h-6 text-yellow-500" />
+                    <h2 className="text-2xl font-bold text-white">Memo Pro</h2>
+                </div>
 
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                transition={{ duration: 0.3 }}
-                            >
-                                <div className="relative overflow-hidden rounded-2xl bg-[#1A1A1A] shadow-xl">
-                                    <div className="relative h-[180px]">
-                                        <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-600 overflow-hidden">
-                                            <div className="relative h-full flex items-center justify-center">
-                                                <Sparkles className="w-12 h-12 text-white" />
-                                            </div>
-                                        </div>
-                                    </div>
+                <p className="text-gray-400 mb-6">
+                    Débloquez tout le potentiel de Memo avec notre offre Pro
+                </p>
 
-                                    <div className="px-6 pb-6 space-y-6">
-                                        <div className="text-center space-y-2 mt-4">
-                                            <h3 className="text-2xl font-semibold text-white">Passez à Pro</h3>
-                                            <p className="text-gray-400 font-normal">Débloquez toutes les fonctionnalités premium</p>
-                                        </div>
+                <div className="space-y-4 mb-8">
+                    {features.map((feature, index) => (
+                        <div key={index} className="flex items-center space-x-3">
+                            <div className="flex-shrink-0">
+                                <Check className="w-5 h-5 text-green-500" />
+                            </div>
+                            <span className="text-white">{feature}</span>
+                        </div>
+                    ))}
+                </div>
 
-                                        <div className="space-y-4">
-                                            <div className="flex items-center gap-3">
-                                                <Sparkles className="w-5 h-5 text-yellow-500" />
-                                                <span className="text-gray-200 font-normal">Génération illimitée de mémos</span>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <Sparkles className="w-5 h-5 text-yellow-500" />
-                                                <span className="text-gray-200 font-normal">Accès prioritaire</span>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <Sparkles className="w-5 h-5 text-yellow-500" />
-                                                <span className="text-gray-200 font-normal">Support premium</span>
-                                            </div>
-                                        </div>
+                <div className="space-y-4">
+                    <div className="text-center">
+                        <span className="text-3xl font-bold text-white">9.99€</span>
+                        <span className="text-gray-400 ml-2">/mois</span>
+                    </div>
 
-                                        <button
-                                            onMouseDown={() => {/* Add your pro subscription logic here */ }}
-                                            className="w-full p-3 rounded-2xl bg-blue-600 text-white font-normal hover:bg-blue-500 transition-colors flex items-center justify-center gap-2"
-                                        >
-                                            <Sparkles className="w-4 h-4" />
-                                            Commencer maintenant
-                                        </button>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        </DialogContent>
-                    </>
-                )}
-            </AnimatePresence>
-        </Dialog>
+                    <button
+                        onClick={handleSubscribe}
+                        className="w-full px-6 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-xl hover:from-yellow-600 hover:to-yellow-700 font-medium transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                        Passer à Pro
+                    </button>
+                </div>
+            </div>
+        </div>
     );
 }; 

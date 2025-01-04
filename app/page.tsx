@@ -8,9 +8,13 @@ import Image from 'next/image';
 import { MemoList } from '@/components/ui/MemoList';
 import { Input } from "@/components/ui/Input";
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay';
+import { AuthModal } from '@/components/ui/AuthModal';
+import UserMenu from '@/components/ui/UserMenu';
+import { ProModal } from '@/components/ui/ProModal';
 
 // 4. Types et constantes
 import type { Memo } from '@/types';
+import { testSupabaseConnection } from '@/lib/supabase/client';
 
 // Page d'accueil de l'application Memo
 // Gère l'interface principale et la saisie du sujet du mémo
@@ -58,6 +62,32 @@ export default function PageAccueil() {
             height: 800
         };
     });
+
+    // Auth modal state
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+    const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+
+    // Pro modal state
+    const [isProModalOpen, setIsProModalOpen] = useState(false);
+
+    const handleOpenAuthModal = (mode: 'signin' | 'signup') => {
+        setAuthMode(mode);
+        setIsAuthModalOpen(true);
+    };
+
+    const handleOpenProModal = () => {
+        setIsProModalOpen(true);
+    };
+
+    useEffect(() => {
+        const testConnection = async () => {
+            const isConnected = await testSupabaseConnection();
+            if (!isConnected) {
+                setError('Failed to connect to the database');
+            }
+        };
+        testConnection();
+    }, [setError]);
 
     useEffect(() => {
         const updateDimensions = () => {
@@ -116,7 +146,13 @@ export default function PageAccueil() {
     return (
         <div className="flex flex-col h-screen bg-[#121212] text-white overflow-hidden">
             <div className="min-h-screen flex flex-col">
-                <header className="pt-4">
+                <header className="pt-4 relative">
+                    <div className="absolute right-4 top-4">
+                        <UserMenu
+                            onOpenAuthModal={handleOpenAuthModal}
+                            onOpenProModal={handleOpenProModal}
+                        />
+                    </div>
                     <Image
                         src="/memo.svg"
                         alt="Logo Memo"
@@ -161,6 +197,18 @@ export default function PageAccueil() {
                     </div>
                 </main>
             </div>
+
+            <AuthModal
+                isOpen={isAuthModalOpen}
+                onCloseAction={() => setIsAuthModalOpen(false)}
+                mode={authMode}
+                onModeChangeAction={setAuthMode}
+            />
+
+            <ProModal
+                isOpen={isProModalOpen}
+                onCloseAction={() => setIsProModalOpen(false)}
+            />
         </div>
     );
 }

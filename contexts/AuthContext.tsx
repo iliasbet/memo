@@ -1,8 +1,8 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { User } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 interface AuthContextType {
     user: User | null;
@@ -19,14 +19,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        console.log('Setting up auth listener...');
-        const unsubscribe = auth.onAuthStateChanged((user) => {
-            console.log('Auth state changed:', user?.email);
-            setUser(user);
+        const getSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            setUser(session?.user ?? null);
+            setLoading(false);
+        };
+
+        getSession();
+
+        const { data: authListener } = supabase.auth.onAuthStateChange((_, session) => {
+            setUser(session?.user ?? null);
             setLoading(false);
         });
 
-        return unsubscribe;
+        return () => {
+            authListener.subscription.unsubscribe();
+        };
     }, []);
 
     return (
