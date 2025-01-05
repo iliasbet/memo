@@ -28,6 +28,16 @@
     font-family: var(--font-lexend-light);
     font-weight: 500;
     scroll-behavior: smooth;
+    scroll-snap-type: y proximity;
+    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;  /* IE and Edge */
+    overflow-y: scroll;
+    overscroll-behavior-y: none;
+  }
+
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  html::-webkit-scrollbar {
+    display: none;
   }
 
   /* Ajout des variables responsives */
@@ -286,4 +296,39 @@ strong {
   .preserve-3d {
     transform-style: preserve-3d;
   }
+}
+
+section {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  transition: all 0.8s cubic-bezier(0.65, 0, 0.35, 1);
+  min-height: 100vh;
+  position: relative;
+  will-change: transform, background-color;
+}
+
+section#library {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+/* Add a subtle separator between sections */
+section#library::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 100%
+  );
+  opacity: 0.8;
+  transition: opacity 0.5s ease;
+}
+
+section#library:hover::before {
+  opacity: 1;
 }

@@ -11,10 +11,13 @@ import { AuthModal } from '@/components/ui/AuthModal';
 import UserMenu from '@/components/ui/UserMenu';
 import { ProModal } from '@/components/ui/ProModal';
 import { Card } from '@/components/ui/Card';
+import { LibrarySection } from '@/components/LibrarySection';
+import { useMagneticScroll } from '@/hooks/useMagneticScroll';
 
 // 4. Types et constantes
 import type { Memo } from '@/types';
 import { testSupabaseConnection } from '@/lib/supabase/client';
+import { SectionType } from '@/types';
 
 // Page d'accueil de l'application Memo
 // Gère l'interface principale et la saisie du sujet du mémo
@@ -38,6 +41,21 @@ const useMemoState = () => {
     };
 };
 
+const defaultMemo: Memo = {
+    id: 'default',
+    content: '',
+    sections: [
+        {
+            type: SectionType.Title,
+            content: 'Your next memo is coming...'
+        },
+        {
+            type: SectionType.Content,
+            content: '• I will help you organize your thoughts\n• Break down complex topics into clear points\n• Create structured summaries\n• Generate actionable insights'
+        }
+    ]
+};
+
 export default function PageAccueil() {
     const {
         content,
@@ -49,6 +67,10 @@ export default function PageAccueil() {
         error,
         setError,
     } = useMemoState();
+
+    const [savedMemos, setSavedMemos] = useState<Memo[]>([]);
+    const sections = ['main', 'library'];
+    const containerRef = useMagneticScroll(sections);
 
     // Auth modal state
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -119,8 +141,8 @@ export default function PageAccueil() {
     }, [content, isLoading, setContent, setCurrentMemo, setError, setIsLoading]);
 
     return (
-        <div className="flex flex-col h-screen bg-[#121212] text-white overflow-hidden">
-            <div className="min-h-screen flex flex-col">
+        <div ref={containerRef} className="bg-[#121212] text-white">
+            <section id="main" className="min-h-screen flex flex-col">
                 <header className="pt-4 relative">
                     <div className="absolute right-4 top-4">
                         <UserMenu
@@ -141,7 +163,11 @@ export default function PageAccueil() {
 
                 <main className="flex flex-col items-center px-4 mt-6">
                     <div className="w-full max-w-3xl">
-                        {currentMemo && <Card sections={currentMemo.sections} />}
+                        <Card 
+                            sections={currentMemo ? currentMemo.sections : defaultMemo.sections} 
+                            isDefault={!currentMemo}
+                            isLoading={isLoading}
+                        />
                     </div>
 
                     <div className="relative w-full max-w-3xl mt-12 mb-8">
@@ -167,7 +193,11 @@ export default function PageAccueil() {
                         )}
                     </div>
                 </main>
-            </div>
+            </section>
+
+            <section id="library" className="min-h-screen">
+                <LibrarySection memos={savedMemos} />
+            </section>
 
             <AuthModal
                 isOpen={isAuthModalOpen}

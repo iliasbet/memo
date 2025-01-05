@@ -3,9 +3,78 @@ import { MemoSection, SectionType } from '@/types';
 
 interface CardProps {
     sections: MemoSection[];
+    isDefault?: boolean;
+    isLoading?: boolean;
 }
 
-export const Card: React.FC<CardProps> = ({ sections }) => {
+interface CardTemplateProps {
+    isDefault: boolean;
+    title: string;
+    points: string[];
+    isLoading?: boolean;
+}
+
+const LoadingTemplate: React.FC<{ isDefault: boolean }> = ({ isDefault }) => (
+    <>
+        <div className="p-8 flex-grow">
+            {/* Title Section */}
+            <div className="pb-4 mb-6">
+                <div className={`h-8 w-3/4 rounded-lg ${isDefault ? 'bg-[#252525]' : 'bg-gray-200'} animate-pulse`} />
+            </div>
+
+            {/* Main Content */}
+            <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center space-x-2">
+                        <div className="w-2 h-2 rounded-full bg-pink-500 opacity-50" />
+                        <div className={`h-5 flex-1 rounded-lg ${isDefault ? 'bg-[#252525]' : 'bg-gray-200'} animate-pulse`} />
+                    </div>
+                ))}
+            </div>
+        </div>
+        
+        {/* Footer */}
+        <div className={`${isDefault ? 'bg-[#252525] text-gray-400' : 'bg-gray-50 text-gray-500'} px-8 py-4 text-sm text-right lowercase opacity-50`}>
+            memo
+        </div>
+    </>
+);
+
+const CardTemplate: React.FC<CardTemplateProps> = ({ isDefault, title, points, isLoading }) => {
+    if (isLoading) {
+        return <LoadingTemplate isDefault={isDefault} />;
+    }
+
+    return (
+        <>
+            <div className="p-8 flex-grow">
+                {/* Title Section */}
+                <div className="pb-4 mb-6">
+                    <h1 className={`text-2xl font-bold ${isDefault ? 'text-white' : 'text-gray-800'}`}>
+                        {title}
+                    </h1>
+                </div>
+
+                {/* Main Content */}
+                <div className="space-y-4">
+                    {points.map((point, i) => (
+                        <p key={i} className={`${isDefault ? 'text-gray-300' : 'text-gray-700'} leading-relaxed pl-4 relative`}>
+                            <span className="absolute left-0 text-pink-500">•</span>
+                            {point.replace(/^[•\s]+/, '')}
+                        </p>
+                    ))}
+                </div>
+            </div>
+            
+            {/* Footer */}
+            <div className={`${isDefault ? 'bg-[#252525] text-gray-400' : 'bg-gray-50 text-gray-500'} px-8 py-4 text-sm text-right lowercase`}>
+                memo
+            </div>
+        </>
+    );
+};
+
+export const Card: React.FC<CardProps> = ({ sections, isDefault = false, isLoading = false }) => {
     const cardRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -17,26 +86,22 @@ export const Card: React.FC<CardProps> = ({ sections }) => {
         let currentRotateY = 0;
         let currentScale = 1;
         
-        // Track the target rotation
         let targetRotateX = 0;
         let targetRotateY = 0;
         
-        const smoothing = 0.10; // Increased for more noticeable movement
-        const maxRotation = 10; // Increased maximum rotation angle
+        const smoothing = 0.10;
+        const maxRotation = 10;
 
         const updateCardPosition = () => {
-            // Smooth interpolation towards target rotation
             currentRotateX += (targetRotateX - currentRotateX) * smoothing;
             currentRotateY += (targetRotateY - currentRotateY) * smoothing;
             currentScale += (1.05 - currentScale) * smoothing;
 
-            // Calculate shadow based on rotation
             const shadowX = currentRotateY * 2;
             const shadowY = currentRotateX * 2;
             const shadowBlur = 20 + Math.abs(currentRotateX + currentRotateY);
             const shadowOpacity = 0.25 + (Math.abs(currentRotateX + currentRotateY) / maxRotation) * 0.15;
 
-            // Apply transforms
             card.style.transform = `
                 perspective(1000px)
                 rotateX(${currentRotateX}deg)
@@ -57,12 +122,9 @@ export const Card: React.FC<CardProps> = ({ sections }) => {
             const cardCenterX = rect.left + rect.width / 2;
             const cardCenterY = rect.top + rect.height / 2;
             
-            // Calculate the distance from the mouse to the center of the card
             const distanceX = e.clientX - cardCenterX;
             const distanceY = e.clientY - cardCenterY;
             
-            // Calculate rotation based on distance from card center
-            // Normalize the rotation to create a spherical effect
             const normalizedX = distanceX / (window.innerWidth / 2);
             const normalizedY = distanceY / (window.innerHeight / 2);
             
@@ -71,12 +133,10 @@ export const Card: React.FC<CardProps> = ({ sections }) => {
         };
 
         const handleMouseLeave = () => {
-            // Smoothly return to center
             targetRotateX = 0;
             targetRotateY = 0;
         };
 
-        // Start the animation loop
         frameId = requestAnimationFrame(updateCardPosition);
 
         window.addEventListener('mousemove', handleMouseMove);
@@ -89,57 +149,29 @@ export const Card: React.FC<CardProps> = ({ sections }) => {
         };
     }, []);
 
+    // Extract title and points from sections
+    const title = sections.find(s => s.type === SectionType.Title)?.content || '';
+    const contentSection = sections.find(s => s.type === SectionType.Content);
+    const points = contentSection ? contentSection.content.split('\n').filter(Boolean) : [];
+
     return (
         <div 
             ref={cardRef}
-            className="w-full max-w-[400px] aspect-[7/10] mx-auto bg-white rounded-3xl overflow-hidden flex flex-col will-change-transform"
+            className={`w-full max-w-[400px] aspect-[7/10] mx-auto rounded-3xl overflow-hidden flex flex-col will-change-transform ${
+                isDefault ? 'bg-[#1E1E1E] text-white' : 'bg-white'
+            }`}
             style={{ 
                 transformStyle: 'preserve-3d',
                 transformOrigin: 'center center',
                 boxShadow: '0 10px 30px -10px rgba(0,0,0,0.2), 0 5px 15px -5px rgba(0,0,0,0.1)'
             }}
         >
-            <div className="p-8 flex-grow">
-                {/* Title Section */}
-                <div className="border-b border-gray-200 pb-4 mb-6">
-                    {sections.map((section, index) => {
-                        if (section.type === SectionType.Title) {
-                            return (
-                                <h1 key={index} className="text-2xl font-bold text-gray-800">
-                                    {section.content}
-                                </h1>
-                            );
-                        }
-                        return null;
-                    })}
-                </div>
-
-                {/* Main Content */}
-                <div className="space-y-4">
-                    {sections.map((section, index) => {
-                        if (section.type === SectionType.Content) {
-                            // Split content into lines and remove empty ones
-                            const points = section.content.split('\n').filter(Boolean);
-                            return (
-                                <div key={index} className="space-y-4">
-                                    {points.map((point, i) => (
-                                        <p key={i} className="text-gray-700 leading-relaxed pl-4 relative">
-                                            <span className="absolute left-0 text-pink-500">•</span>
-                                            {point.replace(/^[•\s]+/, '')} {/* Remove any bullet points from the AI response */}
-                                        </p>
-                                    ))}
-                                </div>
-                            );
-                        }
-                        return null;
-                    })}
-                </div>
-            </div>
-            
-            {/* Footer */}
-            <div className="bg-gray-50 px-8 py-4 text-sm text-gray-500 text-right lowercase">
-                memo
-            </div>
+            <CardTemplate
+                isDefault={isDefault}
+                title={title}
+                points={points}
+                isLoading={isLoading}
+            />
         </div>
     );
 }; 

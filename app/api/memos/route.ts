@@ -10,16 +10,17 @@ export async function POST(request: Request) {
         const { content } = body;
 
         if (!content) {
+            console.error('API Error: Missing content in request body');
             return NextResponse.json(
                 { error: 'Missing required field: content' },
                 { status: 400 }
             );
         }
 
-        // Generate memo content using AI
+        console.log('Generating memo for content:', content);
         const generatedMemo = await generateMemo(content);
+        console.log('Generated memo:', generatedMemo);
 
-        // Return the generated memo directly without saving to database
         return NextResponse.json({ 
             memo: {
                 id: generatedMemo.id,
@@ -29,9 +30,19 @@ export async function POST(request: Request) {
         });
 
     } catch (error) {
-        console.error('API Error:', error);
+        // Log the full error details
+        console.error('API Error Details:', {
+            message: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined,
+            error
+        });
+
+        // Return a more informative error response
         return NextResponse.json(
-            { error: 'Internal server error', details: String(error) },
+            { 
+                error: 'Failed to generate memo',
+                details: error instanceof Error ? error.message : 'Unknown error occurred'
+            },
             { status: 500 }
         );
     }
