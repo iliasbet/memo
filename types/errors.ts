@@ -40,9 +40,3 @@ export class ValidationError extends SpecificMemoError {
     super(ErrorCode.VALIDATION_ERROR, message, context);
   }
 }
-
-export class AnthropicError extends SpecificMemoError {
-  constructor(message: string, context?: Record<string, unknown>) {
-    super(ErrorCode.API_ERROR, message, context);
-  }
-}
