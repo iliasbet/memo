@@ -72,7 +72,6 @@ async function makeAICall(systemPrompt: string, userContent: string): Promise<st
         }
         return content;
     } catch (error) {
-        logger.error('AI call failed:', error);
         throw createOpenAIError('Failed to generate content', { originalError: error });
     }
 }

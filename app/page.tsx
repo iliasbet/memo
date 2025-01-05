@@ -50,19 +50,6 @@ export default function PageAccueil() {
         setError,
     } = useMemoState();
 
-    const [windowDimensions, setWindowDimensions] = useState(() => {
-        if (typeof window !== 'undefined') {
-            return {
-                width: window.innerWidth,
-                height: window.innerHeight
-            };
-        }
-        return {
-            width: 1200,
-            height: 800
-        };
-    });
-
     // Auth modal state
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
@@ -88,24 +75,6 @@ export default function PageAccueil() {
         };
         testConnection();
     }, [setError]);
-
-    useEffect(() => {
-        const updateDimensions = () => {
-            setWindowDimensions({
-                width: window.innerWidth,
-                height: window.innerHeight
-            });
-        };
-
-        updateDimensions();
-        window.addEventListener('resize', updateDimensions);
-        window.addEventListener('orientationchange', updateDimensions);
-
-        return () => {
-            window.removeEventListener('resize', updateDimensions);
-            window.removeEventListener('orientationchange', updateDimensions);
-        };
-    }, []);
 
     const handleSubmit = useCallback(async (e?: React.FormEvent) => {
         e?.preventDefault();

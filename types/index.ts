@@ -41,11 +41,14 @@ export interface Memo {
     };
 }
 
-export interface MemoSectionProps {
+export interface BaseMemoSectionProps {
     type: SectionType;
     content: string;
     color: string;
     isActive: boolean;
+}
+
+export interface MemoSectionProps extends BaseMemoSectionProps {
     isLoading?: boolean;
     direction?: number;
     title?: string;

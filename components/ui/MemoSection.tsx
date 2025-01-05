@@ -13,28 +13,23 @@ export const MemoSection: React.FC<ExtendedMemoSectionProps> = memo(({ type, con
     if (!isActive) return null;
     if (isLoading) return <LoadingCard />;
 
-    const slideTransition = {
-        duration: 0.3,
-        ease: [0.4, 0.0, 0.2, 1]
-    };
-
-    const slideVariants = {
+    const slideAnimation = {
         enter: (direction: number) => ({
             x: direction > 0 ? 500 : -500,
             opacity: 0,
-            transition: slideTransition
+            transition: { duration: 0.3, ease: [0.4, 0.0, 0.2, 1] }
         }),
         center: {
             zIndex: 1,
             x: 0,
             opacity: 1,
-            transition: slideTransition
+            transition: { duration: 0.3, ease: [0.4, 0.0, 0.2, 1] }
         },
         exit: (direction: number) => ({
             zIndex: 0,
             x: direction < 0 ? 500 : -500,
             opacity: 0,
-            transition: slideTransition
+            transition: { duration: 0.3, ease: [0.4, 0.0, 0.2, 1] }
         })
     };
 
@@ -54,7 +49,7 @@ export const MemoSection: React.FC<ExtendedMemoSectionProps> = memo(({ type, con
             initial="enter"
             animate="center"
             exit="exit"
-            variants={slideVariants}
+            variants={slideAnimation}
             custom={direction}
         >
             <div className="relative w-full h-full">
