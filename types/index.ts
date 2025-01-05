@@ -54,11 +54,6 @@ export interface MemoSectionProps {
     idMemo?: string;
 }
 
-export interface IdeaGroup {
-    mainIdea: string;
-    followUpIdeas: string[];
-}
-
 export interface MemoContext {
     topic: string;
     objective: string;
@@ -103,4 +98,10 @@ export interface SectionPlan {
     histoire: string;
     technique: string;
     atelier: string;
+}
+
+export interface MemoGenerationParams {
+    bookId: string;
+    chapterId?: string;
+    userId: string;
 }

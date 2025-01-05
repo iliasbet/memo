@@ -1,33 +1,27 @@
+import { Memo, MemoGenerationParams, MemoSection } from '@/types';
 import { useState, useCallback } from 'react';
-import { MemoSection, Memo } from '@/types';
 
 export const useStreamingMemo = () => {
-    const [memo, setMemo] = useState<Memo | null>(null);
     const [streamingContent, setStreamingContent] = useState<string>('');
+    const [memo, setMemo] = useState<Memo | null>(null);
 
     const updateMemo = useCallback((section: MemoSection) => {
-        setMemo(prev => prev
-            ? { ...prev, sections: [...prev.sections, section] }
-            : {
-                id: `memo-${Date.now()}`,
-                sections: [section],
-                metadata: {
-                    createdAt: new Date().toISOString(),
-                    topic: section.contenu || ''
-                }
-            });
-    }, []);
-
-    const resetMemo = useCallback(() => {
-        setMemo(null);
-        setStreamingContent('');
+        setMemo((prev) => {
+            if (!prev) {
+                return null;
+            }
+            return {
+                ...prev,
+                sections: [...prev.sections, section]
+            };
+        });
     }, []);
 
     return {
         memo,
         streamingContent,
+        setMemo,
         setStreamingContent,
-        updateMemo,
-        resetMemo
+        updateMemo
     };
 }; 
