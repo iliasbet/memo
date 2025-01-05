@@ -1,6 +1,14 @@
 import React from 'react';
 import { MemoSectionProps } from '@/types/index';
 import { formatMemoContent } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+
+const cardBaseStyles = "w-full h-[400px] relative rounded-2xl overflow-hidden";
+const cardContentStyles = "relative h-full flex flex-col p-8";
+const cardBgStyles = "absolute inset-0 bg-gradient-to-br from-blue-600 to-blue-800";
+const titleStyles = "text-3xl font-medium mb-4 text-white relative z-10";
+const contentStyles = "flex-1 overflow-y-auto prose prose-invert max-w-none relative z-10";
+const topicStyles = "mt-4 text-sm text-white/60 relative z-10";
 
 export const MemoCard: React.FC<MemoSectionProps> = ({
     title,
@@ -10,22 +18,25 @@ export const MemoCard: React.FC<MemoSectionProps> = ({
     idMemo
 }) => {
     if (isLoading) {
-        return <div className="w-full h-[400px] animate-pulse bg-gray-800 rounded-2xl" />;
+        return <div className={cn(cardBaseStyles, "animate-pulse bg-gray-800")} />;
     }
 
     return (
-        <article className="w-full h-[400px] rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 p-8 relative overflow-hidden">
+        <div className={cardBaseStyles}>
+            <div className={cardBgStyles} />
             <div className="absolute inset-0 opacity-[0.15] noise-bg" />
             
-            <div className="relative z-10 flex flex-col h-full">
-                <h2 className="text-3xl font-medium mb-4 text-white">{title}</h2>
+            <div className={cardContentStyles}>
+                <h2 className={titleStyles}>{title}</h2>
 
-                <div className="flex-1 overflow-y-auto prose prose-invert max-w-none">
-                    <div dangerouslySetInnerHTML={{ __html: formatMemoContent(content) }} />
+                <div className={contentStyles}>
+                    <div dangerouslySetInnerHTML={{
+                        __html: formatMemoContent(content)
+                    }} />
                 </div>
 
-                {topic && <p className="mt-4 text-sm text-white/60">{topic}</p>}
+                {topic && <div className={topicStyles}>{topic}</div>}
             </div>
-        </article>
+        </div>
     );
 };

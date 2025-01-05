@@ -30,18 +30,12 @@ interface AIResponse {
  */
 function parseAIResponse(response: string): AIResponse {
     try {
-        const jsonMatch = response.match(/\{[\s\S]*\}/)?.[0];
-        if (!jsonMatch) {
-            return { contenu: truncateContent(response.trim()) };
-        }
-        
-        const parsed = JSON.parse(jsonMatch);
+        const parsed = JSON.parse(response.match(/\{[\s\S]*\}/)?.[0] ?? '{}');
         return {
             titre: parsed.titre,
-            contenu: truncateContent(parsed.contenu || parsed.content || '')
+            contenu: truncateContent(parsed.contenu || parsed.content || response.trim())
         };
-    } catch (error) {
-        logger.warn('Failed to parse AI response, using raw text', { response });
+    } catch {
         return { contenu: truncateContent(response.trim()) };
     }
 }
