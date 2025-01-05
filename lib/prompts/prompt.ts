@@ -8,6 +8,7 @@ Task: Create a structured learning card that breaks down a concept into clear st
 FORMAT:
 {
     "title": "Main concept or action to learn",
+    "subtitle": "Brief 1-line description or context",
     "content": "• First key point or step to understand\n• Second important consideration\n• Third practical tip or insight\n• Final actionable takeaway"
 }
 

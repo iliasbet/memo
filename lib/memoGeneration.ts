@@ -20,27 +20,44 @@ async function makeAICall(prompt: string, content: string): Promise<string> {
 }
 
 export async function generateMemo(content: string): Promise<Memo> {
-    const response = await makeAICall(prompt({ topic: content }), content);
-    const memoContent = JSON.parse(response);
-
-    const sections: MemoSection[] = [
-        {
-            type: SectionType.Title,
-            content: memoContent.title
-        },
-        {
-            type: SectionType.Subtitle,
-            content: memoContent.subtitle
-        },
-        {
-            type: SectionType.Content,
-            content: memoContent.content
+    try {
+        const response = await makeAICall(prompt({ topic: content }), content);
+        let memoContent;
+        
+        try {
+            memoContent = JSON.parse(response);
+        } catch (error) {
+            console.error('Failed to parse AI response:', error);
+            throw new Error('Invalid AI response format');
         }
-    ];
 
-    return {
-        id: `memo-${Date.now()}`,
-        content,
-        sections
-    };
+        // Validate required fields
+        if (!memoContent.title || !memoContent.subtitle || !memoContent.content) {
+            throw new Error('Missing required fields in AI response');
+        }
+
+        const sections: MemoSection[] = [
+            {
+                type: SectionType.Title,
+                content: memoContent.title
+            },
+            {
+                type: SectionType.Subtitle,
+                content: memoContent.subtitle
+            },
+            {
+                type: SectionType.Content,
+                content: memoContent.content
+            }
+        ];
+
+        return {
+            id: `memo-${Date.now()}`,
+            content,
+            sections
+        };
+    } catch (error) {
+        console.error('Error generating memo:', error);
+        throw error;
+    }
 }
