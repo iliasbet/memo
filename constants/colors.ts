@@ -11,12 +11,3 @@ export const MEMO_COLORS = {
 } as const;
 
 export type MemoColorKey = keyof typeof MEMO_COLORS;
-
-// Types et variantes de thème pour l'application
-export const MEMO_VARIANTS = {
-    default: {
-        background: '#1E1E1E',
-        text: '#FFFFFF',
-        border: '#2A2A2A'
-    }
-} as const;

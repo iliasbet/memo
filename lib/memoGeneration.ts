@@ -7,22 +7,19 @@ import {
     techniquePrompt,
     histoirePrompt,
     atelierPrompt
-} from './prompts';
+} from './prompts/index';
 import { MemoSection, SectionType, Memo, MemoContext } from '@/types';
 import { MEMO_COLORS } from '@/constants/colors';
 import { OpenAIError, ValidationError } from '@/types/errors';
 
-// Constants
 const OPENAI_MODEL = 'gpt-4o-mini' as const;
 const MAX_CONTENT_LENGTH = 220;
 const TEMPERATURE = 0.7;
 
-// OpenAI client initialization
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Types
 interface AIResponse {
     titre?: string;
     contenu: string;

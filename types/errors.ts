@@ -14,28 +14,17 @@ export class MemoError extends Error {
     public context?: Record<string, unknown>
   ) {
     super(message);
-    this.name = 'MemoError';
-  }
-}
-
-export class SpecificMemoError extends MemoError {
-  constructor(
-    code: ErrorCode,
-    message: string,
-    context?: Record<string, unknown>
-  ) {
-    super(code, message, context);
     this.name = `${code}Error`;
   }
 }
 
-export class OpenAIError extends SpecificMemoError {
+export class OpenAIError extends MemoError {
   constructor(message: string, context?: Record<string, unknown>) {
     super(ErrorCode.OPENAI_ERROR, message, context);
   }
 }
 
-export class ValidationError extends SpecificMemoError {
+export class ValidationError extends MemoError {
   constructor(message: string, context?: Record<string, unknown>) {
     super(ErrorCode.VALIDATION_ERROR, message, context);
   }

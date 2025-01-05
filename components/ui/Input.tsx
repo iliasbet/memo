@@ -16,27 +16,7 @@ interface InputProps {
   isLoading?: boolean;
   placeholder?: string;
   currentMemo?: Memo | null;
-  onAddToCollection?: (memo: Memo) => void;
-  ref?: React.RefObject<HTMLTextAreaElement>;
 }
-
-const SendIcon = () => (
-  <svg
-    width="15"
-    height="15"
-    viewBox="0 0 15 15"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M7.5 1L7.5 14M7.5 1L1.5 7M7.5 1L13.5 7"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
 
 const Input = forwardRef<HTMLTextAreaElement, InputProps>(({
   value,
@@ -45,7 +25,6 @@ const Input = forwardRef<HTMLTextAreaElement, InputProps>(({
   isLoading = false,
   placeholder,
   currentMemo = null,
-  onAddToCollection
 }, ref) => {
   const [isError, setIsError] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -188,7 +167,7 @@ const Input = forwardRef<HTMLTextAreaElement, InputProps>(({
           disabled={isLoading}
           isLoading={isLoading}
           className="absolute right-2 top-1.5"
-          icon={<SendIcon />}
+          icon={<Send size={15} />}
         />
       </motion.div>
     </form>

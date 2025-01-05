@@ -31,7 +31,6 @@
       ]
     },
     "types": [
-      "jest",
       "node"
     ],
     "baseUrl": "."
@@ -41,8 +40,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "types/global.d.ts",
-    "__tests__/**/*.ts"
+    "types/global.d.ts"
   ],
   "exclude": [
     "node_modules"

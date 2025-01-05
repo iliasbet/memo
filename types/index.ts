@@ -88,11 +88,6 @@ export interface Collection {
     color?: string;
 }
 
-export interface ExtendedMemoSectionProps extends MemoSectionProps {
-    isLastSection?: boolean;
-    direction?: number;
-}
-
 export interface SectionPlan {
     concept: string;
     histoire: string;
