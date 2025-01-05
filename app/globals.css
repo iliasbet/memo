@@ -28,7 +28,7 @@
     font-family: var(--font-lexend-light);
     font-weight: 500;
     scroll-behavior: smooth;
-    scroll-snap-type: y proximity;
+    scroll-snap-type: y mandatory;
     scrollbar-width: none;  /* Firefox */
     -ms-overflow-style: none;  /* IE and Edge */
     overflow-y: scroll;
@@ -53,6 +53,8 @@
 
 body {
   @apply bg-background text-foreground;
+  overscroll-behavior-y: none;
+  position: relative;
 }
 
 @keyframes loadingBorder {
@@ -305,6 +307,7 @@ section {
   min-height: 100vh;
   position: relative;
   will-change: transform, background-color;
+  overflow: hidden;
 }
 
 section#library {
