@@ -7,14 +7,6 @@ export {
     createContextualPrompt
 } from './config';
 
-// Export types and interfaces
-export type {
-    BasePromptResponse,
-    TitledPromptResponse,
-    DurationPromptResponse,
-    SubjectPromptResponse
-} from './config';
-
 // Export type guards
 export {
     isTitledResponse,

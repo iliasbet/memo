@@ -93,13 +93,6 @@ export interface Collection {
     color?: string;
 }
 
-export interface CollectionFolder {
-    id: string;
-    name: string;
-    collections: Collection[];
-    createdAt: string;
-}
-
 export interface ExtendedMemoSectionProps extends MemoSectionProps {
     isLastSection?: boolean;
     direction?: number;

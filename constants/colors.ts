@@ -1,6 +1,4 @@
-// Définition des couleurs pour chaque type de section de mémo
-// Utilisé pour la cohérence visuelle à travers l'application
-
+// Color definitions for memo sections
 export const MEMO_COLORS = {
     objectif: '#067934',
     accroche: '#8b0909',

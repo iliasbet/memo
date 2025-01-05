@@ -1,4 +1,4 @@
-import { Logger, LogLevel } from './logger';
+import { LogLevel } from './logger';
 import { ErrorCode, MemoError } from '@/types/errors';
 
 export interface RetryOptions {
@@ -63,5 +63,3 @@ export const ErrorHandler: ErrorHandlerStatic = {
         );
     }
 };
-
-export { MemoError } from '@/types/errors';
