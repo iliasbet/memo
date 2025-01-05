@@ -2,89 +2,37 @@
 // Gère la création et la validation des mémos via les endpoints POST et GET
 
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase/client';
-import type { PostgrestError } from '@supabase/supabase-js';
+import { generateMemo } from '@/lib/memoGeneration';
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { content, bookId } = body;
+        const { content } = body;
 
-        if (!content || !bookId) {
+        if (!content) {
             return NextResponse.json(
-                { error: 'Missing required fields: content and bookId are required' },
+                { error: 'Missing required field: content' },
                 { status: 400 }
             );
         }
 
-        let userId = 'anonymous';
-        const { data: { user } } = await supabase.auth.getUser();
+        // Generate memo content using AI
+        const generatedMemo = await generateMemo(content);
 
-        if (user) {
-            userId = user.id;
-        }
+        // Return the generated memo directly without saving to database
+        return NextResponse.json({ 
+            memo: {
+                id: generatedMemo.id,
+                content: content,
+                sections: generatedMemo.sections
+            }
+        });
 
-        const { data, error } = await supabase
-            .from('memos')
-            .insert([{
-                user_id: userId,
-                content,
-                book_id: bookId
-            }])
-            .select()
-            .single();
-
-        if (error) throw error;
-        if (!data) throw new Error('No data returned from database');
-
-        return NextResponse.json({ memo: data });
     } catch (error) {
-        // Type guard for PostgrestError
-        const isPostgrestError = (err: unknown): err is PostgrestError =>
-            typeof err === 'object' && err !== null && 'code' in err;
-
-        if (isPostgrestError(error)) {
-            return NextResponse.json(
-                { error: 'Database error occurred' },
-                { status: 500 }
-            );
-        }
-
+        console.error('API Error:', error);
         return NextResponse.json(
-            { error: 'Internal server error' },
+            { error: 'Internal server error', details: String(error) },
             { status: 500 }
         );
     }
 }
-
-export async function GET(request: Request) {
-    try {
-        const { data: { user } } = await supabase.auth.getUser();
-        const userId = user ? user.id : 'anonymous';
-
-        const { data, error } = await supabase
-            .from('memos')
-            .select('*')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        return NextResponse.json({ memos: data });
-    } catch (error) {
-        const isPostgrestError = (err: unknown): err is PostgrestError =>
-            typeof err === 'object' && err !== null && 'code' in err;
-
-        if (isPostgrestError(error)) {
-            return NextResponse.json(
-                { error: 'Database error occurred' },
-                { status: 500 }
-            );
-        }
-
-        return NextResponse.json(
-            { error: 'Internal server error' },
-            { status: 500 }
-        );
-    }
-} 

@@ -5,12 +5,12 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 
 // 3. Composants internes
-import { MemoList } from '@/components/ui/MemoList';
 import { Input } from "@/components/ui/Input";
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay';
 import { AuthModal } from '@/components/ui/AuthModal';
 import UserMenu from '@/components/ui/UserMenu';
 import { ProModal } from '@/components/ui/ProModal';
+import { Card } from '@/components/ui/Card';
 
 // 4. Types et constantes
 import type { Memo } from '@/types';
@@ -90,23 +90,29 @@ export default function PageAccueil() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     content: content.trim(),
-                    bookId: 'default'
+                    userId: 'anonymous'
                 }),
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                const errorMessage = data.error || 'Error generating memo';
-                const errorDetails = data.details ? `: ${JSON.stringify(data.details)}` : '';
-                throw new Error(`${errorMessage}${errorDetails}`);
+                throw new Error(data.error || 'Error generating memo');
             }
 
+            const memo: Memo = {
+                id: data.memo.id || `memo-${Date.now()}`,
+                content: data.memo.content || content.trim(),
+                sections: data.memo.sections || []
+            };
+
             setContent('');
-            setCurrentMemo(data.memo);
+            setCurrentMemo(memo);
+
         } catch (error) {
-            console.error('Error submitting memo:', error);
-            setError(error instanceof Error ? error.message : 'An unexpected error occurred');
+            const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+            console.error('Error submitting memo:', errorMessage);
+            setError(errorMessage);
         } finally {
             setIsLoading(false);
         }
@@ -135,11 +141,7 @@ export default function PageAccueil() {
 
                 <main className="flex flex-col items-center px-4 mt-6">
                     <div className="w-full max-w-3xl">
-                        <MemoList
-                            memos={currentMemo ? [currentMemo] : []}
-                            isLoading={isLoading}
-                            currentStreamingContent={null}
-                        />
+                        {currentMemo && <Card sections={currentMemo.sections} />}
                     </div>
 
                     <div className="relative w-full max-w-3xl mt-12 mb-8">
