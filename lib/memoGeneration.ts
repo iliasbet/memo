@@ -10,7 +10,7 @@ import {
 } from './prompts/index';
 import { MemoSection, SectionType, Memo, MemoContext } from '@/types';
 import { MEMO_COLORS } from '@/constants/colors';
-import { OpenAIError, ValidationError } from '@/types/errors';
+import { createOpenAIError, createValidationError } from '@/types/errors';
 
 const OPENAI_MODEL = 'gpt-4o-mini' as const;
 const MAX_CONTENT_LENGTH = 220;
@@ -30,20 +30,18 @@ interface AIResponse {
  */
 function parseAIResponse(response: string): AIResponse {
     try {
-        if (response.includes('{') && response.includes('}')) {
-            const jsonMatch = response.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-                const parsed = JSON.parse(jsonMatch[0]);
-                const content = parsed.contenu || parsed.content || '';
-                return {
-                    titre: parsed.titre,
-                    contenu: truncateContent(content)
-                };
-            }
+        const jsonMatch = response.match(/\{[\s\S]*\}/)?.[0];
+        if (!jsonMatch) {
+            return { contenu: truncateContent(response.trim()) };
         }
-        return { contenu: truncateContent(response.trim()) };
+        
+        const parsed = JSON.parse(jsonMatch);
+        return {
+            titre: parsed.titre,
+            contenu: truncateContent(parsed.contenu || parsed.content || '')
+        };
     } catch (error) {
-        logger.warn('Failed to parse AI response as JSON, using raw text', { response });
+        logger.warn('Failed to parse AI response, using raw text', { response });
         return { contenu: truncateContent(response.trim()) };
     }
 }
@@ -75,12 +73,12 @@ async function makeAICall(systemPrompt: string, userContent: string): Promise<st
 
         const content = response.choices[0]?.message?.content;
         if (!content) {
-            throw new ValidationError('No content generated from AI');
+            throw createValidationError('No content generated from AI');
         }
         return content;
     } catch (error) {
         logger.error('AI call failed:', error);
-        throw new OpenAIError('Failed to generate content', { originalError: error });
+        throw createOpenAIError('Failed to generate content', { originalError: error });
     }
 }
 
@@ -110,7 +108,7 @@ export async function generateMemo(content: string): Promise<Memo> {
         return createMemoStructure(content, sections);
     } catch (error) {
         logger.error('Error generating memo:', error);
-        throw error instanceof OpenAIError ? error : new OpenAIError('Failed to generate memo', { originalError: error });
+        throw error instanceof Error && 'code' in error ? error : createOpenAIError('Failed to generate memo', { originalError: error });
     }
 }
 
@@ -125,7 +123,7 @@ async function generatePlan(context: MemoContext): Promise<any> {
     try {
         return JSON.parse(planText);
     } catch (error) {
-        throw new ValidationError('Invalid plan format', { planText });
+        throw createValidationError('Invalid plan format', { planText });
     }
 }
 
@@ -222,18 +220,14 @@ function createMemoStructure(content: string, sections: MemoSection[]): Memo {
 }
 
 function parseDuration(durationStr: string): { value: number; unit: 'min' | 'h' | 'j' } | undefined {
-    try {
-        const match = durationStr.match(/(\d+)\s*(min|h|j)/i);
-        if (!match) return undefined;
+    const match = durationStr.match(/^(\d+)\s*(min|h|j)$/i);
+    if (!match) return undefined;
 
-        const [, valueStr, unit] = match;
-        const value = parseInt(valueStr, 10);
+    const value = parseInt(match[1], 10);
+    if (isNaN(value)) return undefined;
 
-        return isNaN(value) ? undefined : {
-            value,
-            unit: unit.toLowerCase() as 'min' | 'h' | 'j'
-        };
-    } catch {
-        return undefined;
-    }
+    return {
+        value,
+        unit: match[2].toLowerCase() as 'min' | 'h' | 'j'
+    };
 }

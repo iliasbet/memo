@@ -26,3 +26,9 @@ export function handleApiError(error: unknown): NextResponse {
     { status: 500 }
   );
 }
+
+export function formatMemoContent(content: string): string {
+    return content
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/__([^_]+)__/g, '<em>$1</em>');
+}

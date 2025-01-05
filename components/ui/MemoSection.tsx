@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import { MemoSectionProps, Duration, SectionType } from '@/types';
 import { LoadingCard } from './LoadingCard';
 import { motion } from 'framer-motion';
+import { formatMemoContent } from '@/lib/utils';
 
 interface ExtendedMemoSectionProps extends Omit<MemoSectionProps, 'duration'> {
     duration?: Duration;
@@ -12,32 +13,28 @@ export const MemoSection: React.FC<ExtendedMemoSectionProps> = memo(({ type, con
     if (!isActive) return null;
     if (isLoading) return <LoadingCard />;
 
+    const slideTransition = {
+        duration: 0.3,
+        ease: [0.4, 0.0, 0.2, 1]
+    };
+
     const slideVariants = {
         enter: (direction: number) => ({
             x: direction > 0 ? 500 : -500,
             opacity: 0,
-            transition: {
-                duration: 0.3,
-                ease: [0.4, 0.0, 0.2, 1]
-            }
+            transition: slideTransition
         }),
         center: {
             zIndex: 1,
             x: 0,
             opacity: 1,
-            transition: {
-                duration: 0.3,
-                ease: [0.4, 0.0, 0.2, 1]
-            }
+            transition: slideTransition
         },
         exit: (direction: number) => ({
             zIndex: 0,
             x: direction < 0 ? 500 : -500,
             opacity: 0,
-            transition: {
-                duration: 0.3,
-                ease: [0.4, 0.0, 0.2, 1]
-            }
+            transition: slideTransition
         })
     };
 
@@ -49,9 +46,7 @@ export const MemoSection: React.FC<ExtendedMemoSectionProps> = memo(({ type, con
         return `${duration.value} ${duration.unit}`;
     };
 
-    const formattedContent = content
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/__([^_]+)__/g, '<em>$1</em>');
+    const formattedContent = formatMemoContent(content);
 
     return (
         <motion.div

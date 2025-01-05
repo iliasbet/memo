@@ -7,25 +7,21 @@ export enum ErrorCode {
   TIMEOUT_ERROR = 'TIMEOUT_ERROR'
 }
 
-export class MemoError extends Error {
-  constructor(
-    public code: ErrorCode,
-    message: string,
-    public context?: Record<string, unknown>
-  ) {
-    super(message);
-    this.name = `${code}Error`;
-  }
+export interface MemoError extends Error {
+  code: ErrorCode;
+  context?: Record<string, unknown>;
 }
 
-export class OpenAIError extends MemoError {
-  constructor(message: string, context?: Record<string, unknown>) {
-    super(ErrorCode.OPENAI_ERROR, message, context);
-  }
-}
+export const createError = (code: ErrorCode, message: string, context?: Record<string, unknown>): MemoError => {
+  const error = new Error(message) as MemoError;
+  error.code = code;
+  error.context = context;
+  error.name = `${code}Error`;
+  return error;
+};
 
-export class ValidationError extends MemoError {
-  constructor(message: string, context?: Record<string, unknown>) {
-    super(ErrorCode.VALIDATION_ERROR, message, context);
-  }
-}
+export const createOpenAIError = (message: string, context?: Record<string, unknown>): MemoError =>
+  createError(ErrorCode.OPENAI_ERROR, message, context);
+
+export const createValidationError = (message: string, context?: Record<string, unknown>): MemoError =>
+  createError(ErrorCode.VALIDATION_ERROR, message, context);

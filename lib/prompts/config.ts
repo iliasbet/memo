@@ -73,21 +73,20 @@ export interface SubjectPromptResponse {
 
 // Type guard functions
 export function isTitledResponse(response: unknown): response is TitledPromptResponse {
-    if (typeof response !== 'object' || response === null) return false;
-    const r = response as Record<string, unknown>;
-    return typeof r.titre === 'string' && typeof r.contenu === 'string';
+    return typeof response === 'object' && response !== null &&
+        'titre' in response && 'contenu' in response &&
+        typeof (response as any).titre === 'string' &&
+        typeof (response as any).contenu === 'string';
 }
 
 export function isDurationResponse(response: unknown): response is DurationPromptResponse {
-    if (!isTitledResponse(response)) return false;
-    const r = response as unknown as Record<string, unknown>;
-    return typeof r.duree === 'string';
+    return isTitledResponse(response) && 'duree' in response &&
+        typeof (response as any).duree === 'string';
 }
 
 export function isSubjectResponse(response: unknown): response is SubjectPromptResponse {
-    if (typeof response !== 'object' || response === null) return false;
-    const r = response as Record<string, unknown>;
-    return typeof r.sujet === 'string';
+    return typeof response === 'object' && response !== null &&
+        'sujet' in response && typeof (response as any).sujet === 'string';
 }
 
 // Helper function to create a prompt with context
