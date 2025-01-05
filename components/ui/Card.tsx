@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { formatMemoContent } from '@/lib/utils';
 import { motion } from 'framer-motion';
@@ -10,13 +10,13 @@ export interface MemoSection {
   color?: string;
 }
 
-export interface VerticalMemoCardProps {
+export interface CardProps {
   topic: string;
   sections: MemoSection[];
   isLoading?: boolean;
 }
 
-const VerticalMemoCard: React.FC<VerticalMemoCardProps> = ({
+const Card: React.FC<CardProps> = ({
   topic,
   sections = [],
   isLoading = false,
@@ -27,29 +27,29 @@ const VerticalMemoCard: React.FC<VerticalMemoCardProps> = ({
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!cardRef.current) return;
-
       const rect = cardRef.current.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      
+      // Calculate the angle based on distance from card center
+      const deltaX = e.clientX - centerX;
+      const deltaY = e.clientY - centerY;
+      
+      // Normalize the rotation (max 40 degrees)
+      const maxRotation = 40;
+      const maxDistance = window.innerWidth / 2;
+      
+      const rotateY = (deltaX / maxDistance) * maxRotation;
+      const rotateX = -(deltaY / maxDistance) * maxRotation;
+      
       setMousePosition({
-        x: (x / rect.width - 0.5) * 20, // -10 to +10 degrees
-        y: (y / rect.height - 0.5) * -20, // +10 to -10 degrees
+        x: rotateY,
+        y: rotateX,
       });
     };
 
-    const card = cardRef.current;
-    if (card) {
-      card.addEventListener('mousemove', handleMouseMove);
-      card.addEventListener('mouseleave', () => setMousePosition({ x: 0, y: 0 }));
-    }
-
-    return () => {
-      if (card) {
-        card.removeEventListener('mousemove', handleMouseMove);
-        card.removeEventListener('mouseleave', () => setMousePosition({ x: 0, y: 0 }));
-      }
-    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
   if (isLoading) {
@@ -83,7 +83,11 @@ const VerticalMemoCard: React.FC<VerticalMemoCardProps> = ({
   return (
     <motion.div 
       ref={cardRef}
-      className="w-full max-w-[400px] aspect-[3/4] mx-auto perspective-1000"
+      className="w-full max-w-[400px] aspect-[3/4] mx-auto"
+      style={{
+        perspective: "1500px",
+        transformStyle: "preserve-3d"
+      }}
       initial={{ y: 20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
@@ -92,8 +96,9 @@ const VerticalMemoCard: React.FC<VerticalMemoCardProps> = ({
         className="relative w-full h-full"
         style={{
           transformStyle: "preserve-3d",
-          transform: `rotateX(${mousePosition.y}deg) rotateY(${mousePosition.x}deg)`,
-          transition: "transform 0.1s ease-out"
+          transformOrigin: "center center",
+          transform: `perspective(1500px) rotateY(${mousePosition.x}deg) rotateX(${mousePosition.y}deg)`,
+          transition: "transform 0.05s linear"
         }}
       >
         {/* Card body */}
@@ -192,4 +197,4 @@ const VerticalMemoCard: React.FC<VerticalMemoCardProps> = ({
   );
 };
 
-export default VerticalMemoCard; 
+export default Card; 

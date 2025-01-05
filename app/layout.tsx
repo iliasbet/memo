@@ -2,7 +2,6 @@
 import React from 'react';
 import './globals.css';
 import { Lexend_Deca } from 'next/font/google';
-import MenuWrapper from '@/components/ui/MenuWrapper';
 import { AuthProvider } from '@/contexts/AuthContext';
 
 const lexend = Lexend_Deca({
@@ -23,7 +22,6 @@ const RootLayout: React.FC<RootLayoutProps> = ({ children }) => (
     </head>
     <body className={`${lexend.variable} font-sans`}>
       <AuthProvider>
-        <MenuWrapper />
         {children}
       </AuthProvider>
     </body>

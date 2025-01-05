@@ -1,6 +1,5 @@
 import React, { memo } from 'react';
 import { MemoSectionProps, Duration, SectionType } from '@/types';
-import { LoadingCard } from './LoadingCard';
 import { motion } from 'framer-motion';
 import { formatMemoContent } from '@/lib/utils';
 
@@ -11,7 +10,6 @@ interface ExtendedMemoSectionProps extends Omit<MemoSectionProps, 'duration'> {
 
 export const MemoSection: React.FC<ExtendedMemoSectionProps> = memo(({ type, content, color, isActive, isLoading = false, title, duration, isLastSection, direction = 0, topic, idMemo }) => {
     if (!isActive) return null;
-    if (isLoading) return <LoadingCard />;
 
     const slideAnimation = {
         enter: (direction: number) => ({

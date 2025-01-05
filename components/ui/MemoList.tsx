@@ -1,6 +1,6 @@
 import React from 'react';
 import { Memo } from '@/types';
-import VerticalMemoCard from './VerticalMemoCard';
+import Card from './Card';
 
 interface MemoListProps {
   memos: Memo[];
@@ -25,7 +25,7 @@ export const MemoList: React.FC<MemoListProps> = ({
 
   if (isLoading) {
     return (
-      <VerticalMemoCard
+      <Card
         topic={currentStreamingContent || 'Loading...'}
         sections={[
           {
@@ -41,7 +41,7 @@ export const MemoList: React.FC<MemoListProps> = ({
   const sections = currentMemo.sections || [];
   
   return (
-    <VerticalMemoCard
+    <Card
       topic={currentMemo.metadata?.topic || currentMemo.content || ''}
       sections={sections.map(section => ({
         type: section.type,
