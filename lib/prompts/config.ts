@@ -71,23 +71,23 @@ export interface SubjectPromptResponse {
     sujet: string;
 }
 
+// Helper for type checking
+function isStringField(obj: unknown, ...fields: string[]): boolean {
+    if (!obj || typeof obj !== 'object') return false;
+    return fields.every(field => typeof (obj as any)[field] === 'string');
+}
+
 // Type guard functions
 export function isTitledResponse(response: unknown): response is TitledPromptResponse {
-    const r = response as any;
-    return r?.titre && r?.contenu && 
-           typeof r.titre === 'string' && 
-           typeof r.contenu === 'string';
+    return isStringField(response, 'titre', 'contenu');
 }
 
 export function isDurationResponse(response: unknown): response is DurationPromptResponse {
-    const r = response as any;
-    return isTitledResponse(response) && 
-           typeof r.duree === 'string';
+    return isTitledResponse(response) && isStringField(response, 'duree');
 }
 
 export function isSubjectResponse(response: unknown): response is SubjectPromptResponse {
-    const r = response as any;
-    return r?.sujet && typeof r.sujet === 'string';
+    return isStringField(response, 'sujet');
 }
 
 // Helper function to create a prompt with context

@@ -30,10 +30,11 @@ interface AIResponse {
  */
 function parseAIResponse(response: string): AIResponse {
     try {
-        const parsed = JSON.parse(response.match(/\{[\s\S]*\}/)?.[0] ?? '{}');
+        const jsonMatch = response.match(/\{[\s\S]*\}/)?.[0];
+        const parsed = jsonMatch ? JSON.parse(jsonMatch) : {};
         return {
             titre: parsed.titre,
-            contenu: truncateContent(parsed.contenu || parsed.content || response.trim())
+            contenu: truncateContent(parsed.contenu ?? parsed.content ?? response.trim())
         };
     } catch {
         return { contenu: truncateContent(response.trim()) };
@@ -112,88 +113,220 @@ async function generateObjective(content: string): Promise<string> {
     return parseAIResponse(response).contenu;
 }
 
-async function generatePlan(context: MemoContext): Promise<any> {
-    const planText = await makeAICall(memoPlanner(context), context.topic);
-    try {
-        return JSON.parse(planText);
-    } catch (error) {
-        throw createValidationError('Invalid plan format', { planText });
+interface BaseProgressionItem {
+    type: string;
+    titre: string;
+}
+
+interface ProgressionItem extends BaseProgressionItem {
+    focus?: string;
+    angle?: string;
+    approche?: string;
+    durée?: string;
+}
+
+interface ConceptItem extends BaseProgressionItem {
+    focus: string;
+}
+
+interface MemoPlan {
+    progression: {
+        histoire: ProgressionItem;
+        accroche: ProgressionItem;
+        concepts: ConceptItem[];
+        technique: ProgressionItem;
+        atelier: ProgressionItem & { durée: string };
+    };
+}
+
+interface SectionGenerator {
+    type: SectionType;
+    color: string;
+    generate: (context: MemoContext, plan: MemoPlan) => Promise<Omit<MemoSection, 'type' | 'couleur'>>;
+}
+
+const sectionGenerators: SectionGenerator[] = [
+    {
+        type: SectionType.Objectif,
+        color: MEMO_COLORS.objectif,
+        generate: async (context) => ({
+            contenu: context.objective
+        })
+    },
+    {
+        type: SectionType.Accroche,
+        color: MEMO_COLORS.accroche,
+        generate: async (context) => {
+            const response = await makeAICall(accrochePrompt(context), context.topic);
+            return { contenu: parseAIResponse(response).contenu };
+        }
+    },
+    {
+        type: SectionType.Histoire,
+        color: MEMO_COLORS.histoire,
+        generate: async (context, plan) => {
+            termcolor.blue('📖 Generating histoire...');
+            const response = await makeAICall(histoirePrompt({
+                ...context,
+                histoireType: plan.progression.histoire.type,
+                accrocheAngle: plan.progression.accroche.angle
+            }), context.topic);
+            const parsed = parseAIResponse(response);
+            return {
+                titre: plan.progression.histoire.type,
+                contenu: parsed.contenu
+            };
+        }
+    },
+    {
+        type: SectionType.Concept,
+        color: MEMO_COLORS.concept,
+        generate: async (context, plan) => {
+            termcolor.blue('💡 Generating concepts...');
+            const sections: Omit<MemoSection, 'type' | 'couleur'>[] = [];
+            
+            for (const concept of plan.progression.concepts) {
+                const conceptContent = await makeAICall(
+                    `${concept.focus}\n\nGenerate a concept explanation.`,
+                    context.topic
+                );
+                sections.push({
+                    titre: concept.titre,
+                    contenu: parseAIResponse(conceptContent).contenu
+                });
+            }
+            
+            return sections[0]; // Return first concept, others will be added separately
+        }
+    },
+    {
+        type: SectionType.Technique,
+        color: MEMO_COLORS.technique,
+        generate: async (context, plan) => {
+            termcolor.blue('🛠️ Generating technique...');
+            const response = await makeAICall(techniquePrompt({
+                ...context,
+                techniqueApproche: plan.progression.technique.approche
+            }), context.topic);
+            const parsed = parseAIResponse(response);
+            return {
+                titre: plan.progression.technique.titre,
+                contenu: parsed.contenu
+            };
+        }
+    },
+    {
+        type: SectionType.Atelier,
+        color: MEMO_COLORS.atelier,
+        generate: async (context, plan) => {
+            termcolor.blue('🎨 Generating atelier...');
+            const response = await makeAICall(atelierPrompt({
+                ...context,
+                atelierType: plan.progression.atelier.type
+            }), context.topic);
+            const parsed = parseAIResponse(response);
+            return {
+                titre: plan.progression.atelier.titre,
+                contenu: parsed.contenu,
+                duree: parseDuration(plan.progression.atelier.durée)
+            };
+        }
+    }
+];
+
+function validatePlan(plan: unknown): asserts plan is MemoPlan {
+    if (!plan || typeof plan !== 'object') {
+        throw createValidationError('Invalid plan structure');
+    }
+    
+    const p = plan as any;
+    if (!p.progression) {
+        throw createValidationError('Missing progression in plan');
+    }
+
+    // Validate required sections
+    const sections = ['histoire', 'accroche', 'concepts', 'technique', 'atelier'] as const;
+    for (const section of sections) {
+        if (!p.progression[section]) {
+            throw createValidationError(`Missing ${section} section in plan`);
+        }
+    }
+
+    // Validate concepts array
+    if (!Array.isArray(p.progression.concepts)) {
+        throw createValidationError('Concepts must be an array');
+    }
+
+    // Validate each concept has required fields
+    for (const concept of p.progression.concepts) {
+        if (!concept.focus || typeof concept.focus !== 'string') {
+            throw createValidationError('Each concept must have a focus string');
+        }
+        if (!concept.titre || typeof concept.titre !== 'string') {
+            throw createValidationError('Each concept must have a titre string');
+        }
+        if (!concept.type || typeof concept.type !== 'string') {
+            throw createValidationError('Each concept must have a type string');
+        }
+    }
+
+    // Validate required fields in other sections
+    for (const section of sections) {
+        const item = p.progression[section];
+        if (!item.titre || typeof item.titre !== 'string') {
+            throw createValidationError(`Missing titre in ${section} section`);
+        }
+        if (!item.type || typeof item.type !== 'string') {
+            throw createValidationError(`Missing type in ${section} section`);
+        }
+    }
+
+    // Validate atelier duration
+    if (!p.progression.atelier.durée || typeof p.progression.atelier.durée !== 'string') {
+        throw createValidationError('Missing durée in atelier section');
     }
 }
 
-async function generateSections(context: MemoContext, plan: any): Promise<MemoSection[]> {
+async function generatePlan(context: MemoContext): Promise<MemoPlan> {
+    const planText = await makeAICall(memoPlanner(context), context.topic);
+    try {
+        const plan = JSON.parse(planText);
+        validatePlan(plan);
+        return plan;
+    } catch (error) {
+        throw createValidationError('Invalid plan format', { planText, error });
+    }
+}
+
+async function generateSections(context: MemoContext, plan: MemoPlan): Promise<MemoSection[]> {
     const sections: MemoSection[] = [];
 
-    // Add objective section
-    sections.push({
-        type: SectionType.Objectif,
-        contenu: context.objective,
-        couleur: MEMO_COLORS.objectif
-    });
-
-    // Generate accroche
-    const accroche = await makeAICall(accrochePrompt(context), context.topic);
-    sections.push({
-        type: SectionType.Accroche,
-        contenu: parseAIResponse(accroche).contenu,
-        couleur: MEMO_COLORS.accroche
-    });
-
-    // Generate histoire
-    termcolor.blue('📖 Generating histoire...');
-    const histoire = await makeAICall(histoirePrompt({
-        ...context,
-        histoireType: plan.progression.histoire.type,
-        accrocheAngle: plan.progression.accroche.angle
-    }), context.topic);
-    sections.push({
-        type: SectionType.Histoire,
-        titre: plan.progression.histoire.type,
-        contenu: parseAIResponse(histoire).contenu,
-        couleur: MEMO_COLORS.histoire
-    });
-
-    // Generate concepts
-    termcolor.blue('💡 Generating concepts...');
-    for (const [index, concept] of plan.progression.concepts.entries()) {
-        const conceptContent = await makeAICall(
-            `${concept.focus}\n\nGenerate a concept explanation.`,
-            context.topic
-        );
+    // Generate all sections
+    for (const generator of sectionGenerators) {
+        const sectionData = await generator.generate(context, plan);
         sections.push({
-            type: SectionType.Concept,
-            titre: concept.titre,
-            contenu: parseAIResponse(conceptContent).contenu,
-            couleur: MEMO_COLORS.concept
+            type: generator.type,
+            couleur: generator.color,
+            ...sectionData
         });
+
+        // Handle additional concepts after the first one
+        if (generator.type === SectionType.Concept && plan.progression.concepts.length > 1) {
+            for (let i = 1; i < plan.progression.concepts.length; i++) {
+                const concept = plan.progression.concepts[i];
+                const conceptContent = await makeAICall(
+                    `${concept.focus}\n\nGenerate a concept explanation.`,
+                    context.topic
+                );
+                sections.push({
+                    type: SectionType.Concept,
+                    titre: concept.titre,
+                    contenu: parseAIResponse(conceptContent).contenu,
+                    couleur: generator.color
+                });
+            }
+        }
     }
-
-    // Generate technique
-    termcolor.blue('🛠️ Generating technique...');
-    const technique = await makeAICall(techniquePrompt({
-        ...context,
-        techniqueApproche: plan.progression.technique.approche
-    }), context.topic);
-    sections.push({
-        type: SectionType.Technique,
-        titre: plan.progression.technique.titre,
-        contenu: parseAIResponse(technique).contenu,
-        couleur: MEMO_COLORS.technique
-    });
-
-    // Generate atelier
-    termcolor.blue('🎨 Generating atelier...');
-    const atelier = await makeAICall(atelierPrompt({
-        ...context,
-        atelierType: plan.progression.atelier.type
-    }), context.topic);
-    sections.push({
-        type: SectionType.Atelier,
-        titre: plan.progression.atelier.titre,
-        contenu: parseAIResponse(atelier).contenu,
-        couleur: MEMO_COLORS.atelier,
-        duree: parseDuration(plan.progression.atelier.durée)
-    });
 
     return sections;
 }

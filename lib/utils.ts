@@ -15,20 +15,30 @@ export type TimeoutController = {
 export function createTimeoutController(timeoutMs: number): TimeoutController {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  const cleanup = () => clearTimeout(timeout);
-  return { controller, cleanup };
+  return { controller, cleanup: () => clearTimeout(timeout) };
 }
 
+type ErrorWithCode = Error & { code?: string | number; status?: number };
+
 export function handleApiError(error: unknown): NextResponse {
-  logger.error('API Error:', error);
-  return NextResponse.json(
-    { error: 'Internal Server Error' },
-    { status: 500 }
-  );
+    const err = error as ErrorWithCode;
+    const status = err.status || 
+                  (err.code === 'VALIDATION_ERROR' ? 400 : 
+                   err.code === 'NOT_FOUND' ? 404 : 500);
+                   
+    logger.error('API Error:', { error: err, status });
+    
+    return NextResponse.json(
+        { 
+            error: err.message || 'Internal Server Error',
+            code: err.code
+        },
+        { status }
+    );
 }
 
 export function formatMemoContent(content: string): string {
     return content
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/__([^_]+)__/g, '<em>$1</em>');
+        .replace(/\*\*(.*?)\*\*|__([^_]+)__/g, (_, p1, p2) => 
+            p1 ? `<strong>${p1}</strong>` : `<em>${p2}</em>`);
 }
