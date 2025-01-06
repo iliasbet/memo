@@ -1,7 +1,8 @@
 export enum SectionType {
     Title = 'title',
     Subtitle = 'subtitle',
-    Content = 'content'
+    Content = 'content',
+    Mantra = 'mantra'
 }
 
 export interface MemoSection {
@@ -18,4 +19,5 @@ export interface Memo {
 export interface MemoContext {
     topic: string;
     description?: string;
+    language?: string;
 }

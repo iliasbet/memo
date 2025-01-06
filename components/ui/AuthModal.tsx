@@ -4,6 +4,7 @@ import { useState, FormEvent, ChangeEvent } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { X } from 'lucide-react';
 import { RoundedButton } from './RoundedButton';
+import { useTranslation } from 'react-i18next';
 
 type AuthMode = 'signin' | 'signup';
 
@@ -18,6 +19,7 @@ export const AuthModal = ({ isOpen, onCloseAction, mode, onModeChangeAction }: A
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const { signIn, signUp, error: authError, isLoading } = useAuth();
+    const { t } = useTranslation();
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -56,7 +58,7 @@ export const AuthModal = ({ isOpen, onCloseAction, mode, onModeChangeAction }: A
                     />
                 </div>
                 <h2 className="text-2xl font-bold mb-6 text-white">
-                    {mode === 'signin' ? 'Se connecter' : "S'inscrire"}
+                    {mode === 'signin' ? t('auth.signin') : t('auth.signup')}
                 </h2>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
@@ -64,7 +66,7 @@ export const AuthModal = ({ isOpen, onCloseAction, mode, onModeChangeAction }: A
                             className="w-full px-4 py-3 rounded-xl bg-[#1E1E1E] text-white border border-gray-800 focus:border-blue-500 focus:outline-none placeholder-gray-500"
                             value={email}
                             onChange={handleEmailChange}
-                            placeholder="Email"
+                            placeholder={t('auth.email')}
                             type="email"
                             required
                         />
@@ -75,7 +77,7 @@ export const AuthModal = ({ isOpen, onCloseAction, mode, onModeChangeAction }: A
                             type="password"
                             value={password}
                             onChange={handlePasswordChange}
-                            placeholder="Mot de passe"
+                            placeholder={t('auth.password')}
                             required
                         />
                     </div>
@@ -90,14 +92,14 @@ export const AuthModal = ({ isOpen, onCloseAction, mode, onModeChangeAction }: A
                             disabled={isLoading}
                             className="w-full px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 font-medium transition-colors"
                         >
-                            {isLoading ? 'Chargement...' : mode === 'signin' ? 'Se connecter' : "S'inscrire"}
+                            {isLoading ? t('auth.loading') : mode === 'signin' ? t('auth.signin') : t('auth.signup')}
                         </button>
                         <button
                             type="button"
                             onClick={() => onModeChangeAction(mode === 'signin' ? 'signup' : 'signin')}
                             className="text-gray-400 hover:text-white text-sm text-center transition-colors"
                         >
-                            {mode === 'signin' ? "Pas encore de compte ? S'inscrire" : 'Déjà un compte ? Se connecter'}
+                            {mode === 'signin' ? t('auth.noAccount') : t('auth.hasAccount')}
                         </button>
                     </div>
                 </form>

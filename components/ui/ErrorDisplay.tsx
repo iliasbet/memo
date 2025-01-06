@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { AlertCircle, X } from 'lucide-react';
 import { MemoError } from '@/types/errors';
+import { useTranslation } from 'react-i18next';
 
 interface ErrorDisplayProps {
   error: MemoError | string;
@@ -10,10 +11,12 @@ interface ErrorDisplayProps {
 }
 
 export const ErrorDisplay: React.FC<ErrorDisplayProps> = React.memo(({ error, onRetry, onClose }) => {
+  const { t } = useTranslation();
+  
   // Message utilisateur simplifié et rassurant
   const message = typeof error === 'string'
     ? error
-    : "Oups ! La génération du memo n'a pas fonctionné... Réessayons !";
+    : t('error.default');
 
   // Log l'erreur réelle dans la console de manière sécurisée
   if (error instanceof Error) {
@@ -39,7 +42,7 @@ export const ErrorDisplay: React.FC<ErrorDisplayProps> = React.memo(({ error, on
                   onMouseDown={onRetry}
                   className="text-blue-500 hover:text-blue-400 transition-all duration-200"
                 >
-                  Réessayer
+                  {t('error.retry')}
                 </button>
               )}
               <button

@@ -2,6 +2,7 @@
 
 import { X, Sparkles, Check } from 'lucide-react';
 import { RoundedButton } from './RoundedButton';
+import { useTranslation } from 'react-i18next';
 
 interface ProModalProps {
     isOpen: boolean;
@@ -9,18 +10,20 @@ interface ProModalProps {
 }
 
 export const ProModal = ({ isOpen, onCloseAction }: ProModalProps) => {
+    const { t } = useTranslation();
+
     if (!isOpen) return null;
 
     const features = [
-        "Génération de mémos illimitée",
-        "Accès à tous les styles d'écriture",
-        "Support prioritaire",
-        "Fonctionnalités en avant-première"
+        t('pro.features.unlimited'),
+        t('pro.features.styles'),
+        t('pro.features.support'),
+        t('pro.features.preview'),
     ];
 
-    const handleSubscribe = async () => {
-        // TODO: Implement Stripe integration
-        console.log('Subscribe clicked');
+    const handleSubscribe = () => {
+        // TODO: Implement subscription logic
+        onCloseAction();
     };
 
     return (
@@ -45,11 +48,11 @@ export const ProModal = ({ isOpen, onCloseAction }: ProModalProps) => {
 
                 <div className="flex items-center space-x-2 mb-6">
                     <Sparkles className="w-6 h-6 text-yellow-500" />
-                    <h2 className="text-2xl font-bold text-white">Memo Pro</h2>
+                    <h2 className="text-2xl font-bold text-white">{t('menu.goPro')}</h2>
                 </div>
 
                 <p className="text-gray-400 mb-6">
-                    Débloquez tout le potentiel de Memo avec notre offre Pro
+                    {t('pro.description')}
                 </p>
 
                 <div className="space-y-4 mb-8">
@@ -65,15 +68,15 @@ export const ProModal = ({ isOpen, onCloseAction }: ProModalProps) => {
 
                 <div className="space-y-4">
                     <div className="text-center">
-                        <span className="text-3xl font-bold text-white">9.99€</span>
-                        <span className="text-gray-400 ml-2">/mois</span>
+                        <span className="text-3xl font-bold text-white">{t('pro.price.amount')}</span>
+                        <span className="text-gray-400 ml-2">{t('pro.price.period')}</span>
                     </div>
 
                     <button
                         onClick={handleSubscribe}
                         className="w-full px-6 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-xl hover:from-yellow-600 hover:to-yellow-700 font-medium transition-all transform hover:scale-[1.02] active:scale-[0.98]"
                     >
-                        Passer à Pro
+                        {t('pro.subscribe')}
                     </button>
                 </div>
             </div>

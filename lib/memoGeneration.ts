@@ -56,13 +56,13 @@ async function makeAICall(prompt: string, content: string): Promise<string> {
     }
 }
 
-export async function generateMemo(content: string): Promise<Memo> {
+export async function generateMemo(content: string, language: string = 'en'): Promise<Memo> {
     if (!content.trim()) {
         throw new Error('Content cannot be empty');
     }
 
     try {
-        const promptText = prompt({ topic: content });
+        const promptText = prompt({ topic: content, language });
         const response = await makeAICall(promptText, content);
         let memoContent;
         
@@ -92,6 +92,11 @@ export async function generateMemo(content: string): Promise<Memo> {
             throw new Error('Missing or invalid content in AI response');
         }
 
+        if (!memoContent.mantra || typeof memoContent.mantra !== 'string') {
+            console.error('Invalid memo mantra:', memoContent);
+            throw new Error('Missing or invalid mantra in AI response');
+        }
+
         // Clean up the content: normalize newlines and ensure bullet points
         const cleanContent = memoContent.content
             .replace(/\\n/g, '\n') // Replace escaped newlines with actual newlines
@@ -110,6 +115,10 @@ export async function generateMemo(content: string): Promise<Memo> {
             {
                 type: SectionType.Content,
                 content: cleanContent
+            },
+            {
+                type: SectionType.Mantra,
+                content: memoContent.mantra.trim()
             }
         ];
 

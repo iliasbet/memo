@@ -7,7 +7,7 @@ import { generateMemo } from '@/lib/memoGeneration';
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { content } = body;
+        const { content, language } = body;
 
         if (!content) {
             console.error('API Error: Missing content in request body');
@@ -17,8 +17,8 @@ export async function POST(request: Request) {
             );
         }
 
-        console.log('Generating memo for content:', content);
-        const generatedMemo = await generateMemo(content);
+        console.log('Generating memo for content:', content, 'language:', language);
+        const generatedMemo = await generateMemo(content, language);
         console.log('Generated memo:', generatedMemo);
 
         return NextResponse.json({ 

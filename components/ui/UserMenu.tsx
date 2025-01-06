@@ -1,76 +1,96 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Menu as MenuIcon, UserPlus, LogIn, Home, Sparkles } from 'lucide-react';
-import { useAuthContext } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
-import { MenuBase } from './MenuBase';
+import { LogOut, Settings, User, Crown, Globe } from 'lucide-react';
 import { RoundedButton } from './RoundedButton';
+import { MenuBase } from './MenuBase';
+import { useAuthContext } from '@/contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 interface UserMenuProps {
-    onOpenAuthModal?: (mode: 'signin' | 'signup') => void;
-    onOpenProModal?: () => void;
+    onSettingsClick: () => void;
+    onProClick: () => void;
+    onAuthClick: () => void;
+    onLanguageClick?: () => void;
 }
 
-const UserMenu = ({ onOpenAuthModal, onOpenProModal }: UserMenuProps) => {
+const UserMenu: React.FC<UserMenuProps> = ({ 
+    onSettingsClick, 
+    onProClick, 
+    onAuthClick,
+    onLanguageClick 
+}) => {
     const [isOpen, setIsOpen] = useState(false);
-    const { user } = useAuthContext();
-    const router = useRouter();
+    const { user, signOut } = useAuthContext();
+    const { t } = useTranslation();
 
-    const menuItems = [
+    const handleSignOut = async () => {
+        await signOut();
+        setIsOpen(false);
+    };
+
+    const handleSettingsClick = () => {
+        onSettingsClick();
+        setIsOpen(false);
+    };
+
+    const handleProClick = () => {
+        onProClick();
+        setIsOpen(false);
+    };
+
+    const handleAuthClick = () => {
+        onAuthClick();
+        setIsOpen(false);
+    };
+
+    const menuItems = user ? [
         {
-            icon: <Home className="w-4 h-4" />,
-            label: 'Accueil',
-            onClick: () => {
-                router.push('/');
-                setIsOpen(false);
-            }
+            icon: <User className="w-4 h-4" />,
+            label: t('menu.logout'),
+            onClick: handleSignOut
         },
-        ...(!user ? [
-            {
-                icon: <LogIn className="w-4 h-4" />,
-                label: 'Se connecter',
-                onClick: () => {
-                    onOpenAuthModal?.('signin');
-                    setIsOpen(false);
-                }
-            },
-            {
-                icon: <UserPlus className="w-4 h-4" />,
-                label: "S'inscrire",
-                onClick: () => {
-                    onOpenAuthModal?.('signup');
-                    setIsOpen(false);
-                }
-            }
-        ] : []),
         {
-            icon: <Sparkles className="w-4 h-4" />,
-            label: 'Passer à pro',
-            onClick: () => {
-                onOpenProModal?.();
-                setIsOpen(false);
-            },
-            className: 'text-yellow-500'
+            icon: <Settings className="w-4 h-4" />,
+            label: t('menu.settings'),
+            onClick: handleSettingsClick
+        },
+        {
+            icon: <Crown className="w-4 h-4 text-yellow-500" />,
+            label: t('menu.goPro'),
+            onClick: handleProClick,
+            className: "text-yellow-500 hover:text-yellow-400"
+        }
+    ] : [
+        {
+            icon: <User className="w-4 h-4" />,
+            label: t('menu.login'),
+            onClick: handleAuthClick
+        },
+        {
+            icon: <Settings className="w-4 h-4" />,
+            label: t('menu.settings'),
+            onClick: handleSettingsClick
+        },
+        {
+            icon: <Crown className="w-4 h-4 text-yellow-500" />,
+            label: t('menu.goPro'),
+            onClick: handleProClick,
+            className: "text-yellow-500 hover:text-yellow-400"
         }
     ];
 
     return (
-        <div className="fixed top-4 right-4 z-50">
-            <div className="relative">
-                <RoundedButton
-                    variant="menu"
-                    onMouseDown={() => setIsOpen(!isOpen)}
-                    aria-label="Menu"
-                    icon={<MenuIcon className="w-6 h-6" />}
-                    className="w-10 h-10 flex items-center justify-center"
-                />
-                {isOpen && (
-                    <div className="absolute right-0 pt-2">
-                        <MenuBase items={menuItems} />
-                    </div>
-                )}
-            </div>
+        <div className="relative">
+            <RoundedButton
+                variant="menu"
+                onClick={() => setIsOpen(!isOpen)}
+                icon={<User className="w-4 h-4" />}
+                className="w-8 h-8 flex items-center justify-center hover:bg-gray-800"
+            />
+            {isOpen && (
+                <MenuBase items={menuItems} />
+            )}
         </div>
     );
 };

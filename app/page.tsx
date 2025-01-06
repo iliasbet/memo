@@ -1,10 +1,7 @@
 'use client';
 
-// 1. React et Next.js
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
-
-// 3. Composants internes
 import { Input } from "@/components/ui/Input";
 import { ErrorDisplay } from '@/components/ui/ErrorDisplay';
 import { AuthModal } from '@/components/ui/AuthModal';
@@ -13,16 +10,13 @@ import { ProModal } from '@/components/ui/ProModal';
 import { Card } from '@/components/ui/Card';
 import { LibrarySection } from '@/components/LibrarySection';
 import { useMagneticScroll } from '@/hooks/useMagneticScroll';
-
-// 4. Types et constantes
 import type { Memo } from '@/types';
 import { testSupabaseConnection } from '@/lib/supabase/client';
 import { SectionType } from '@/types';
+import { useTranslation } from 'react-i18next';
+import { LanguageModal } from '@/components/ui/LanguageModal';
+import { ParametersModal } from '@/components/ui/ParametersModal';
 
-// Page d'accueil de l'application Memo
-// Gère l'interface principale et la saisie du sujet du mémo
-
-// Extraire la logique de gestion d'état dans un custom hook
 const useMemoState = () => {
     const [content, setContent] = useState('');
     const [currentMemo, setCurrentMemo] = useState<Memo | null>(null);
@@ -41,21 +35,6 @@ const useMemoState = () => {
     };
 };
 
-const defaultMemo: Memo = {
-    id: 'default',
-    content: '',
-    sections: [
-        {
-            type: SectionType.Title,
-            content: 'Your next memo is coming...'
-        },
-        {
-            type: SectionType.Content,
-            content: '• I will help you organize your thoughts\n• Break down complex topics into clear points\n• Create structured summaries\n• Generate actionable insights'
-        }
-    ]
-};
-
 export default function PageAccueil() {
     const {
         content,
@@ -71,6 +50,7 @@ export default function PageAccueil() {
     const [savedMemos, setSavedMemos] = useState<Memo[]>([]);
     const sections = ['main', 'library'];
     const containerRef = useMagneticScroll(sections);
+    const { t, i18n } = useTranslation();
 
     // Auth modal state
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -78,6 +58,10 @@ export default function PageAccueil() {
 
     // Pro modal state
     const [isProModalOpen, setIsProModalOpen] = useState(false);
+
+    const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
+
+    const [isParametersModalOpen, setIsParametersModalOpen] = useState(false);
 
     const handleOpenAuthModal = (mode: 'signin' | 'signup') => {
         setAuthMode(mode);
@@ -98,8 +82,7 @@ export default function PageAccueil() {
         testConnection();
     }, [setError]);
 
-    const handleSubmit = useCallback(async (e?: React.FormEvent) => {
-        e?.preventDefault();
+    const handleSubmit = useCallback(async () => {
         if (!content.trim() || isLoading) return;
 
         setIsLoading(true);
@@ -112,7 +95,8 @@ export default function PageAccueil() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     content: content.trim(),
-                    userId: 'anonymous'
+                    userId: 'anonymous',
+                    language: i18n.language
                 }),
             });
 
@@ -138,7 +122,31 @@ export default function PageAccueil() {
         } finally {
             setIsLoading(false);
         }
-    }, [content, isLoading, setContent, setCurrentMemo, setError, setIsLoading]);
+    }, [content, isLoading, setContent, setCurrentMemo, setError, setIsLoading, i18n.language]);
+
+    const defaultMemo: Memo = {
+        id: 'default',
+        content: '',
+        sections: [
+            {
+                type: SectionType.Title,
+                content: t('defaultMemo.title')
+            },
+            {
+                type: SectionType.Content,
+                content: [
+                    t('defaultMemo.point1'),
+                    t('defaultMemo.point2'),
+                    t('defaultMemo.point3'),
+                    t('defaultMemo.point4')
+                ].join('\n')
+            },
+            {
+                type: SectionType.Mantra,
+                content: t('defaultMemo.mantra')
+            }
+        ]
+    };
 
     return (
         <div ref={containerRef} className="bg-[#121212] text-white">
@@ -146,8 +154,10 @@ export default function PageAccueil() {
                 <header className="pt-4 relative">
                     <div className="absolute right-4 top-4">
                         <UserMenu
-                            onOpenAuthModal={handleOpenAuthModal}
-                            onOpenProModal={handleOpenProModal}
+                            onSettingsClick={() => setIsParametersModalOpen(true)}
+                            onProClick={handleOpenProModal}
+                            onAuthClick={() => handleOpenAuthModal('signin')}
+                            onLanguageClick={() => setIsLanguageModalOpen(true)}
                         />
                     </div>
                     <Image
@@ -175,7 +185,6 @@ export default function PageAccueil() {
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
                             onSubmit={handleSubmit}
-                            placeholder="Posez votre question..."
                             isLoading={isLoading}
                             currentMemo={currentMemo}
                         />
@@ -209,6 +218,16 @@ export default function PageAccueil() {
             <ProModal
                 isOpen={isProModalOpen}
                 onCloseAction={() => setIsProModalOpen(false)}
+            />
+
+            <LanguageModal
+                isOpen={isLanguageModalOpen}
+                onCloseAction={() => setIsLanguageModalOpen(false)}
+            />
+
+            <ParametersModal
+                isOpen={isParametersModalOpen}
+                onCloseAction={() => setIsParametersModalOpen(false)}
             />
         </div>
     );

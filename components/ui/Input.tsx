@@ -1,13 +1,14 @@
 // memo/components/ui/Input.tsx
 "use client";
 
-import React, { memo, FormEvent, useState, useRef, useEffect, forwardRef, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { memo, FormEvent, useState, useRef, useEffect, forwardRef } from "react";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Check, Search, Send } from 'lucide-react';
+import { Send } from 'lucide-react';
 import type { Memo } from '@/types';
 import { RoundedButton } from './RoundedButton';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 interface InputProps {
   value: string;
@@ -23,17 +24,17 @@ const Input = forwardRef<HTMLTextAreaElement, InputProps>(({
   onChange,
   onSubmit,
   isLoading = false,
-  placeholder,
+  placeholder: customPlaceholder,
   currentMemo = null,
 }, ref) => {
   const [isError, setIsError] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
-  const [showCollectionModal, setShowCollectionModal] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLFormElement>(null);
   const { user } = useAuthContext();
+  const { t } = useTranslation();
+
+  const placeholder = customPlaceholder || t('input.placeholder');
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -61,35 +62,17 @@ const Input = forwardRef<HTMLTextAreaElement, InputProps>(({
     setTimeout(() => setIsError(false), 500);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter') {
-      if (e.shiftKey) {
-        e.preventDefault();
-        const cursorPosition = e.currentTarget.selectionStart;
-        const newValue = value.slice(0, cursorPosition) + '\n' + value.slice(cursorPosition);
-        onChange({ target: { value: newValue } } as React.ChangeEvent<HTMLTextAreaElement>);
-      } else {
-        e.preventDefault();
-        handleSubmit(e);
-      }
-    }
-  };
-
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     onChange(e);
   };
 
-  const handleSuccess = useCallback(() => {
-    setShowSuccessAnimation(true);
-    setIsSuccess(true);
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  };
 
-    setTimeout(() => {
-      setIsSuccess(false);
-      setShowSuccessAnimation(false);
-    }, 2000);
-  }, []);
-
-  // Animation variants pour l'input
   const inputVariants = {
     idle: {
       scale: 1,
@@ -105,13 +88,6 @@ const Input = forwardRef<HTMLTextAreaElement, InputProps>(({
       }
     }
   };
-
-  // Synchroniser les refs
-  useEffect(() => {
-    if (ref && typeof ref === 'object') {
-      ref.current = textareaRef.current;
-    }
-  }, [ref]);
 
   return (
     <form
@@ -174,5 +150,6 @@ const Input = forwardRef<HTMLTextAreaElement, InputProps>(({
   );
 });
 
-Input.displayName = 'Input';
+Input.displayName = "Input";
+
 export { Input };

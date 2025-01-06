@@ -16,7 +16,7 @@ interface MenuBaseProps {
     className?: string;
 }
 
-export const MenuItem = ({ icon, label, onClick, className, disabled }: MenuItemProps) => (
+const MenuItem = ({ icon, label, onClick, className, disabled }: MenuItemProps) => (
     <button
         onMouseDown={onClick}
         disabled={disabled}
@@ -32,7 +32,9 @@ export const MenuItem = ({ icon, label, onClick, className, disabled }: MenuItem
     </button>
 );
 
-export const MenuBase = ({ items, position = 'bottom', align = 'right', className }: MenuBaseProps) => {
+MenuItem.displayName = 'MenuItem';
+
+const MenuBase = ({ items, position = 'bottom', align = 'right', className }: MenuBaseProps) => {
     return (
         <motion.div
             initial={{ opacity: 0, y: position === 'bottom' ? -10 : 10 }}
@@ -40,7 +42,7 @@ export const MenuBase = ({ items, position = 'bottom', align = 'right', classNam
             exit={{ opacity: 0, y: position === 'bottom' ? -10 : 10 }}
             transition={{ duration: 0.15 }}
             className={cn(
-                "bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl shadow-lg overflow-hidden",
+                "absolute bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl shadow-lg overflow-hidden",
                 "min-w-[200px] max-w-[280px]",
                 position === 'bottom' ? 'mt-2' : 'mb-2',
                 align === 'right' ? 'right-0' : 'left-0',
@@ -54,4 +56,8 @@ export const MenuBase = ({ items, position = 'bottom', align = 'right', classNam
             </div>
         </motion.div>
     );
-}; 
+};
+
+MenuBase.displayName = 'MenuBase';
+
+export { MenuBase, MenuItem }; 

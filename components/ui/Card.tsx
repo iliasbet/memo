@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useEffect, useRef } from 'react';
 import { MemoSection, SectionType } from '@/types';
 
@@ -11,6 +13,7 @@ interface CardTemplateProps {
     isDefault: boolean;
     title: string;
     points: string[];
+    mantra?: string;
     isLoading?: boolean;
 }
 
@@ -40,7 +43,7 @@ const LoadingTemplate: React.FC<{ isDefault: boolean }> = ({ isDefault }) => (
     </>
 );
 
-const CardTemplate: React.FC<CardTemplateProps> = ({ isDefault, title, points, isLoading }) => {
+const CardTemplate: React.FC<CardTemplateProps> = ({ isDefault, title, points, mantra, isLoading }) => {
     if (isLoading) {
         return <LoadingTemplate isDefault={isDefault} />;
     }
@@ -55,6 +58,15 @@ const CardTemplate: React.FC<CardTemplateProps> = ({ isDefault, title, points, i
                     </h1>
                 </div>
 
+                {/* Mantra Section */}
+                {mantra && (
+                    <div className="mb-6">
+                        <p className={`text-sm italic ${isDefault ? 'text-gray-400' : 'text-gray-600'}`}>
+                            "{mantra}"
+                        </p>
+                    </div>
+                )}
+
                 {/* Main Content */}
                 <div className="space-y-4">
                     {points.map((point, i) => (
@@ -67,8 +79,10 @@ const CardTemplate: React.FC<CardTemplateProps> = ({ isDefault, title, points, i
             </div>
             
             {/* Footer */}
-            <div className={`${isDefault ? 'bg-[#252525] text-gray-400' : 'bg-gray-50 text-gray-500'} px-8 py-4 text-sm text-right lowercase`}>
-                memo
+            <div className={`${isDefault ? 'bg-[#252525]' : 'bg-gray-50'} px-8 py-4 text-right`}>
+                <span className={`text-sm ${isDefault ? 'text-gray-400' : 'text-gray-500'} lowercase`}>
+                    memo
+                </span>
             </div>
         </>
     );
@@ -149,10 +163,12 @@ export const Card: React.FC<CardProps> = ({ sections, isDefault = false, isLoadi
         };
     }, []);
 
-    // Extract title and points from sections
+    // Extract title, points, and mantra from sections
     const title = sections.find(s => s.type === SectionType.Title)?.content || '';
     const contentSection = sections.find(s => s.type === SectionType.Content);
+    const mantraSection = sections.find(s => s.type === SectionType.Mantra);
     const points = contentSection ? contentSection.content.split('\n').filter(Boolean) : [];
+    const mantra = mantraSection?.content;
 
     return (
         <div 
@@ -170,6 +186,7 @@ export const Card: React.FC<CardProps> = ({ sections, isDefault = false, isLoadi
                 isDefault={isDefault}
                 title={title}
                 points={points}
+                mantra={mantra}
                 isLoading={isLoading}
             />
         </div>
