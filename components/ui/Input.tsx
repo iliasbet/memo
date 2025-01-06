@@ -4,7 +4,7 @@
 import React, { memo, FormEvent, useState, useRef, useEffect, forwardRef } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Send } from 'lucide-react';
+import { ArrowUp } from 'lucide-react';
 import type { Memo } from '@/types';
 import { RoundedButton } from './RoundedButton';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -29,12 +29,17 @@ const Input = forwardRef<HTMLTextAreaElement, InputProps>(({
 }, ref) => {
   const [isError, setIsError] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLFormElement>(null);
   const { user } = useAuthContext();
   const { t } = useTranslation();
 
-  const placeholder = customPlaceholder || t('input.placeholder');
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const placeholder = isMounted ? (customPlaceholder || t('input.placeholder')) : '';
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -111,6 +116,7 @@ const Input = forwardRef<HTMLTextAreaElement, InputProps>(({
           onBlur={() => setIsFocused(false)}
           placeholder={placeholder}
           disabled={isLoading}
+          suppressHydrationWarning
           className={cn(
             "block",
             "w-full",
@@ -143,7 +149,7 @@ const Input = forwardRef<HTMLTextAreaElement, InputProps>(({
           disabled={isLoading}
           isLoading={isLoading}
           className="absolute right-2 top-1.5"
-          icon={<Send size={15} />}
+          icon={<ArrowUp size={15} />}
         />
       </motion.div>
     </form>

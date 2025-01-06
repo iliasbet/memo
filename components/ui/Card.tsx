@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { MemoSection, SectionType } from '@/types';
 
 interface CardProps {
@@ -13,7 +13,7 @@ interface CardTemplateProps {
     isDefault: boolean;
     title: string;
     points: string[];
-    mantra?: string;
+    heuristic?: string;
     isLoading?: boolean;
 }
 
@@ -43,7 +43,13 @@ const LoadingTemplate: React.FC<{ isDefault: boolean }> = ({ isDefault }) => (
     </>
 );
 
-const CardTemplate: React.FC<CardTemplateProps> = ({ isDefault, title, points, mantra, isLoading }) => {
+const CardTemplate: React.FC<CardTemplateProps> = ({ isDefault, title, points, heuristic, isLoading }) => {
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
     if (isLoading) {
         return <LoadingTemplate isDefault={isDefault} />;
     }
@@ -52,25 +58,35 @@ const CardTemplate: React.FC<CardTemplateProps> = ({ isDefault, title, points, m
         <>
             <div className="p-8 flex-grow">
                 {/* Title Section */}
-                <div className="pb-4 mb-6">
-                    <h1 className={`text-2xl font-bold ${isDefault ? 'text-white' : 'text-gray-800'}`}>
-                        {title}
+                <div className="pb-2 mb-3">
+                    <h1 
+                        className={`text-2xl font-bold ${isDefault ? 'text-white' : 'text-gray-800'}`}
+                        suppressHydrationWarning
+                    >
+                        {isMounted ? title : ''}
                     </h1>
                 </div>
 
-                {/* Mantra Section */}
-                {mantra && (
-                    <div className="mb-6">
-                        <p className={`text-sm italic ${isDefault ? 'text-gray-400' : 'text-gray-600'}`}>
-                            "{mantra}"
+                {/* Heuristic Section */}
+                {heuristic && (
+                    <div className="mb-4">
+                        <p 
+                            className={`text-sm italic ${isDefault ? 'text-gray-400' : 'text-gray-600'}`}
+                            suppressHydrationWarning
+                        >
+                            {isMounted ? heuristic : ''}
                         </p>
                     </div>
                 )}
 
                 {/* Main Content */}
-                <div className="space-y-4">
-                    {points.map((point, i) => (
-                        <p key={i} className={`${isDefault ? 'text-gray-300' : 'text-gray-700'} leading-relaxed pl-4 relative`}>
+                <div className="space-y-2">
+                    {isMounted && points.map((point, i) => (
+                        <p 
+                            key={i} 
+                            className={`${isDefault ? 'text-gray-300' : 'text-gray-700'} leading-snug pl-4 relative`}
+                            suppressHydrationWarning
+                        >
                             <span className="absolute left-0 text-pink-500">•</span>
                             {point.replace(/^[•\s]+/, '')}
                         </p>
@@ -163,12 +179,12 @@ export const Card: React.FC<CardProps> = ({ sections, isDefault = false, isLoadi
         };
     }, []);
 
-    // Extract title, points, and mantra from sections
+    // Extract title, points, and heuristic from sections
     const title = sections.find(s => s.type === SectionType.Title)?.content || '';
     const contentSection = sections.find(s => s.type === SectionType.Content);
-    const mantraSection = sections.find(s => s.type === SectionType.Mantra);
+    const heuristicSection = sections.find(s => s.type === SectionType.Heuristic);
     const points = contentSection ? contentSection.content.split('\n').filter(Boolean) : [];
-    const mantra = mantraSection?.content;
+    const heuristic = heuristicSection?.content;
 
     return (
         <div 
@@ -186,7 +202,7 @@ export const Card: React.FC<CardProps> = ({ sections, isDefault = false, isLoadi
                 isDefault={isDefault}
                 title={title}
                 points={points}
-                mantra={mantra}
+                heuristic={heuristic}
                 isLoading={isLoading}
             />
         </div>

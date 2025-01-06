@@ -41,6 +41,8 @@ async function makeAICall(prompt: string, content: string): Promise<string> {
             error,
             message: error instanceof Error ? error.message : 'Unknown error',
             name: error instanceof Error ? error.name : 'Unknown',
+            prompt,
+            content
         });
         
         if (error instanceof Error) {
@@ -50,6 +52,10 @@ async function makeAICall(prompt: string, content: string): Promise<string> {
             if (error.message.includes('rate limit')) {
                 throw new Error('Too many requests. Please try again in a moment.');
             }
+            if (error.message.includes('insufficient_quota')) {
+                throw new Error('OpenAI API quota exceeded. Please try again later.');
+            }
+            throw new Error(`OpenAI API Error: ${error.message}`);
         }
         
         throw new Error('Failed to generate memo content. Please try again.');
@@ -71,30 +77,32 @@ export async function generateMemo(content: string, language: string = 'en'): Pr
         } catch (error) {
             console.error('Failed to parse AI response:', {
                 response,
-                error: error instanceof Error ? error.message : 'Unknown parsing error'
+                error: error instanceof Error ? error.message : 'Unknown parsing error',
+                content,
+                language
             });
-            throw new Error('Invalid response format from AI. Please try again.');
+            throw new Error(`Invalid JSON response from AI: ${error instanceof Error ? error.message : 'Unknown parsing error'}`);
         }
 
         // Validate required fields
         if (!memoContent || typeof memoContent !== 'object') {
-            console.error('Invalid memo structure - not an object:', memoContent);
-            throw new Error('Invalid response structure from AI');
+            console.error('Invalid memo structure - not an object:', { memoContent, content, language });
+            throw new Error('Invalid response structure from AI: Response is not an object');
         }
 
         if (!memoContent.title || typeof memoContent.title !== 'string') {
-            console.error('Invalid memo title:', memoContent);
+            console.error('Invalid memo title:', { memoContent, content, language });
             throw new Error('Missing or invalid title in AI response');
         }
 
         if (!memoContent.content || typeof memoContent.content !== 'string') {
-            console.error('Invalid memo content:', memoContent);
+            console.error('Invalid memo content:', { memoContent, content, language });
             throw new Error('Missing or invalid content in AI response');
         }
 
-        if (!memoContent.mantra || typeof memoContent.mantra !== 'string') {
-            console.error('Invalid memo mantra:', memoContent);
-            throw new Error('Missing or invalid mantra in AI response');
+        if (!memoContent.heuristic || typeof memoContent.heuristic !== 'string') {
+            console.error('Invalid memo heuristic:', { memoContent, content, language });
+            throw new Error('Missing or invalid heuristic in AI response');
         }
 
         // Clean up the content: normalize newlines and ensure bullet points
@@ -117,8 +125,8 @@ export async function generateMemo(content: string, language: string = 'en'): Pr
                 content: cleanContent
             },
             {
-                type: SectionType.Mantra,
-                content: memoContent.mantra.trim()
+                type: SectionType.Heuristic,
+                content: memoContent.heuristic.trim()
             }
         ];
 

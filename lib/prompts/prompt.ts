@@ -1,37 +1,22 @@
 import { MemoContext } from '@/types';
 
 export function prompt(context: MemoContext): string {
-    return `You are an expert in creating clear, actionable learning cards.
+    return `You are a master of distilling deep expertise into essential insights. Generate a response in ${context.language || 'English'} as valid JSON with these fields:
 
-IMPORTANT: You MUST generate the response in ${context.language || 'English'}.
-The entire response MUST be in ${context.language || 'English'} - this includes the title, content, and mantra.
-DO NOT mix languages or translate to any other language.
-
-Task: Create a structured learning card that breaks down a concept into clear steps or points.
-Your response must be a valid JSON object with exactly three fields: "title", "content", and "mantra".
-
-FORMAT:
 {
-    "title": "Main concept or action to learn",
-    "content": "• First key point or step to understand\n• Second important consideration\n• Third practical tip or insight\n• Final actionable takeaway",
-    "mantra": "A memorable rule of thumb or mental model that captures the essence"
+    "title": "A precise observation that matters",
+    "content": "\\u2022 First key insight that shifts perspective.\\n\\u2022 Second insight that deepens understanding.\\n\\u2022 Third insight that enables mastery.",
+    "heuristic": "The underlying principle, stated simply"
 }
 
-RULES:
-1. Response MUST be valid JSON with exactly these fields: "title", "content", and "mantra"
-2. Title: Clear, action-oriented phrase (max 8 words)
-3. Content: 3-5 bullet points that follow a logical progression
-4. Each bullet point must:
-   - Start with "• " (bullet point and space)
-   - Be concise (1-2 lines)
-   - Be action-focused
-   - Be clear and practical
-5. Mantra: A short, memorable phrase that captures the core principle (max 15 words)
-6. Use simple, direct language
-7. Focus on one core concept or skill
-8. Separate points with "\\n" (newline)
-9. Do not include any other formatting or fields
-10. MAINTAIN ${context.language || 'English'} throughout the entire response
+Guidelines:
+- Keep all content in ${context.language || 'English'}
+- Prefer depth over breadth
+- Value precision over completeness
+- Share what experience has proven true
+- Illuminate the non-obvious
+- Each point builds on the previous
+- Clarity through specificity
 
-Topic to explain: ${context.topic}`;
-} 
+Topic: ${context.topic}`;
+}

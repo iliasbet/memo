@@ -31,17 +31,20 @@ export async function POST(request: Request) {
 
     } catch (error) {
         // Log the full error details
-        console.error('API Error Details:', {
+        const errorDetails = {
             message: error instanceof Error ? error.message : 'Unknown error',
             stack: error instanceof Error ? error.stack : undefined,
-            error
-        });
+            name: error instanceof Error ? error.name : 'Unknown error type',
+            raw: error
+        };
+        console.error('API Error Details:', errorDetails);
 
         // Return a more informative error response
         return NextResponse.json(
             { 
                 error: 'Failed to generate memo',
-                details: error instanceof Error ? error.message : 'Unknown error occurred'
+                details: errorDetails.message,
+                errorType: errorDetails.name
             },
             { status: 500 }
         );

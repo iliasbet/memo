@@ -2,7 +2,7 @@ export enum SectionType {
     Title = 'title',
     Subtitle = 'subtitle',
     Content = 'content',
-    Mantra = 'mantra'
+    Heuristic = 'heuristic'
 }
 
 export interface MemoSection {

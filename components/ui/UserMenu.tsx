@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { LogOut, Settings, User, Crown, Globe } from 'lucide-react';
+import { LogOut, Settings, Menu, Crown, Globe, User } from 'lucide-react';
 import { RoundedButton } from './RoundedButton';
 import { MenuBase } from './MenuBase';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -85,7 +85,7 @@ const UserMenu: React.FC<UserMenuProps> = ({
             <RoundedButton
                 variant="menu"
                 onClick={() => setIsOpen(!isOpen)}
-                icon={<User className="w-4 h-4" />}
+                icon={<Menu className="w-4 h-4" />}
                 className="w-8 h-8 flex items-center justify-center hover:bg-gray-800"
             />
             {isOpen && (

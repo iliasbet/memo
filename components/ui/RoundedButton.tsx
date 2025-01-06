@@ -17,7 +17,7 @@ type MotionButtonProps = Omit<HTMLMotionProps<"button">, keyof BaseButtonProps>;
 type RoundedButtonProps = BaseButtonProps & (BaseButtonProps['animate'] extends true ? MotionButtonProps : ButtonProps);
 
 const variantStyles = {
-    menu: "p-2 bg-[#1A1A1A] hover:bg-[#252525] text-gray-300",
+    menu: "p-2 bg-[#2A2A2A] hover:bg-[#3A3A3A] text-gray-300",
     send: "w-9 h-9 bg-[#2A2A2A] hover:bg-[#3A3A3A] text-gray-300",
     action: "p-3 bg-[#252525] hover:bg-[#303030] text-gray-300"
 } as const;

@@ -39,7 +39,7 @@ const resources = {
         point2: "Décomposer des sujets complexes en points clairs",
         point3: "Créer des résumés structurés",
         point4: "Générer des insights actionnables",
-        mantra: "La clarté par la structure, la sagesse par la synthèse"
+        heuristic: "Plus c'est simple, plus c'est mémorisable"
       },
       pro: {
         description: "Débloquez tout le potentiel de Memo avec notre offre Pro",
@@ -93,7 +93,7 @@ const resources = {
         point2: "Break down complex topics into clear points",
         point3: "Create structured summaries",
         point4: "Generate actionable insights",
-        mantra: "Clarity through structure, wisdom through synthesis"
+        heuristic: "The simpler it is, the easier it sticks"
       },
       pro: {
         description: "Unlock Memo's full potential with our Pro offer",
@@ -147,7 +147,7 @@ const resources = {
         point2: "Desglosar temas complejos en puntos claros",
         point3: "Crear resúmenes estructurados",
         point4: "Generar ideas accionables",
-        mantra: "Claridad a través de la estructura, sabiduría a través de la síntesis"
+        heuristic: "Lo más simple es lo más memorable"
       },
       pro: {
         description: "Desbloquea todo el potencial de Memo con nuestra oferta Pro",
@@ -201,7 +201,7 @@ const resources = {
         point2: "Komplexe Themen in klare Punkte aufteilen",
         point3: "Strukturierte Zusammenfassungen erstellen",
         point4: "Umsetzbare Erkenntnisse generieren",
-        mantra: "Klarheit durch Struktur, Weisheit durch Synthese"
+        heuristic: "Je einfacher, desto einprägsamer"
       },
       pro: {
         description: "Schalte das volle Potenzial von Memo mit unserem Pro-Angebot frei",

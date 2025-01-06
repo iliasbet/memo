@@ -51,6 +51,11 @@ export default function PageAccueil() {
     const sections = ['main', 'library'];
     const containerRef = useMagneticScroll(sections);
     const { t, i18n } = useTranslation();
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     // Auth modal state
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -103,7 +108,8 @@ export default function PageAccueil() {
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || 'Error generating memo');
+                console.error('API Error:', data);
+                throw new Error(data.details || data.error || 'Error generating memo');
             }
 
             const memo: Memo = {
@@ -117,7 +123,12 @@ export default function PageAccueil() {
 
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
-            console.error('Error submitting memo:', errorMessage);
+            console.error('Error submitting memo:', {
+                error,
+                message: errorMessage,
+                content: content.trim(),
+                language: i18n.language
+            });
             setError(errorMessage);
         } finally {
             setIsLoading(false);
@@ -130,20 +141,20 @@ export default function PageAccueil() {
         sections: [
             {
                 type: SectionType.Title,
-                content: t('defaultMemo.title')
+                content: isMounted ? t('defaultMemo.title') : ''
             },
             {
                 type: SectionType.Content,
-                content: [
+                content: isMounted ? [
                     t('defaultMemo.point1'),
                     t('defaultMemo.point2'),
                     t('defaultMemo.point3'),
                     t('defaultMemo.point4')
-                ].join('\n')
+                ].join('\n') : ''
             },
             {
-                type: SectionType.Mantra,
-                content: t('defaultMemo.mantra')
+                type: SectionType.Heuristic,
+                content: isMounted ? t('defaultMemo.heuristic') : ''
             }
         ]
     };
