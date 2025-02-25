@@ -25,7 +25,13 @@ yarn-debug.log*
 yarn-error.log*
 
 # Variables d'environnement
-.env*
+.env
+.env.*
+!.env.example
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # Vercel
 .vercel
@@ -33,4 +39,13 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
-.env*.local
+
+# Logs
+logs
+*.log
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
